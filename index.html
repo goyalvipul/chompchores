@@ -260,6 +260,31 @@ body.danger-mode .danger-banner{display:block}
 @keyframes t-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes t-out{to{opacity:0}}
 @media(max-width:480px){.shell{padding:1rem .75rem 5rem}.bank-pts{font-size:36px}.nav-btn{font-size:10px;padding:7px 3px}.tv-timer-display{font-size:40px}.topbar-center{font-size:16px}}
+
+.mode-switch{display:none;align-items:center;gap:0;border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;margin-right:6px}
+.mode-switch.visible{display:flex}
+.mode-switch button{border:none;background:transparent;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;color:var(--text-muted);cursor:pointer}
+.mode-switch button.active{background:var(--accent);color:#fff}
+.role-checks{display:flex;flex-direction:column;gap:8px}
+.role-check{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-muted);cursor:pointer}
+.role-check input{margin-top:3px;flex-shrink:0}
+.role-check-body{flex:1}
+.role-check-title{font-size:13px;font-weight:600}
+.role-check-desc{font-size:11px;color:var(--text-muted);margin-top:2px}
+.role-badge{display:inline-flex;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;margin-right:4px}
+.role-badge.chore{background:var(--accent-light);color:var(--accent)}
+.role-badge.task{background:#eff6ff;color:#2563eb}
+.role-badge.admin{background:#1a1a2e;color:#c4b5fd}
+
+.view-as{display:none;align-items:center;gap:6px;margin-right:8px}
+.view-as.visible{display:flex}
+.view-as label{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap}
+.view-as select{padding:5px 8px;font-size:12px;width:auto;min-width:120px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-family:inherit}
+.assignee-badge{font-size:10px;font-weight:700;background:var(--surface-muted);color:var(--text-muted);padding:1px 6px;border-radius:3px;margin-left:4px}
+.assign-multi{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);min-height:40px}
+.assign-multi-opt{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:12px;font-weight:600;cursor:pointer;user-select:none}
+.assign-multi-opt:has(input:checked){border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.assign-multi-opt input{margin:0;accent-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -299,6 +324,14 @@ body.danger-mode .danger-banner{display:block}
     <div class="topbar-center">Chomp<span>Chores</span> ⚡</div>
     <div class="topbar-right">
       <div class="sync-dot" id="syncDot" style="background:#22c55e" title="Saved"></div>
+      <div class="view-as" id="viewAsWrap">
+        <label for="viewAsSelect">Impersonate</label>
+        <select id="viewAsSelect" onchange="onImpersonateChange()"></select>
+      </div>
+      <div class="mode-switch" id="modeSwitch">
+        <button type="button" id="modeChoresBtn" onclick="switchAppMode('chore')">Chores</button>
+        <button type="button" id="modeTasksBtn" onclick="switchAppMode('task')">Tasks</button>
+      </div>
       <button class="btn btn-ghost btn-sm" id="resetDayBtn" onclick="requirePin(resetDay)" style="display:none">↺ Reset</button>
       <button class="lock-btn locked" id="lockBtn" onclick="handleLockToggle()" title="Parent access">
         <svg id="lockIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
@@ -327,7 +360,7 @@ body.danger-mode .danger-banner{display:block}
       <button class="nav-btn" id="nav-manage" onclick="showTab('manage')" style="display:none">⚙️ Manage</button>
     </div>
     <div id="tab-dashboard">
-      <div class="section-hd"><div><div class="section-title">Today's chores</div><div class="section-sub" id="dashSub">Tap to mark done</div></div></div>
+      <div class="section-hd"><div><div class="section-title">Today's chores</div><div class="section-sub" id="dashSub">Daily list — resets unchecked each morning</div></div></div>
       <div class="chore-list" id="choreList"></div>
       <div id="onetimeSection" style="display:none;margin-top:1.5rem">
         <div class="section-hd"><div class="section-title">📌 Special tasks for today</div></div>
@@ -350,14 +383,17 @@ body.danger-mode .danger-banner{display:block}
         <div class="form-row" style="margin-bottom:8px">
           <div class="form-col f1"><div class="form-label">Reward type</div><select id="rType" onchange="onRewardTypeChange()"><option value="standard">Standard (one-time redeem)</option><option value="timer">⏱ Timer based</option></select></div>
         </div>
-        <div id="rStandardFields" class="form-row" style="margin-bottom:8px"><div class="form-col f1"><div class="form-label">Points</div><input type="number" id="rCost" placeholder="50" min="1"></div></div>
+        <div id="rStandardFields" class="form-row" style="margin-bottom:8px"><div class="form-col f1"><div class="form-label">Points</div><input type="number" id="rCost" placeholder="50" min="0.01" step="0.01"></div></div>
         <div id="rTimerFields" style="display:none;margin-bottom:8px">
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-            <div class="form-col" style="flex:1;min-width:100px"><div class="form-label">Points</div><input type="number" id="rTimerPts" placeholder="10" min="1"></div>
+            <div class="form-col" style="flex:1;min-width:100px"><div class="form-label">Points</div><input type="number" id="rTimerPts" placeholder="10" min="0.01" step="0.01"></div>
             <div style="padding-bottom:10px;color:var(--text-muted);font-size:13px;font-weight:600">per</div>
             <div class="form-col" style="flex:1;min-width:100px"><div class="form-label">Hours</div><input type="number" id="rTimerHours" placeholder="1" min="0.25" step="0.25"></div>
           </div>
           <div class="form-hint">⏱ Deducted proportionally on actual time used.</div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Assign to <span style="font-weight:500;color:var(--text-muted)">(multi)</span></div><div class="assign-multi" id="rAssignUser"></div></div>
         </div>
         <div class="form-row"><button class="btn btn-primary" onclick="addReward()" style="margin-left:auto">Add reward</button></div>
       </div>
@@ -405,14 +441,17 @@ body.danger-mode .danger-banner{display:block}
         <div class="section-title" style="margin-bottom:.75rem">Add a chore</div>
         <div class="form-row" style="margin-bottom:8px">
           <div class="form-col f1"><div class="form-label">Chore name</div><input type="text" id="cName" placeholder="e.g. Make your bed"></div>
-          <div class="form-col w80"><div class="form-label">Points</div><input type="number" id="cPts" placeholder="10" min="1"></div>
+          <div class="form-col w80"><div class="form-label">Points</div><input type="number" id="cPts" placeholder="1.5" min="0.01" step="0.01"></div>
         </div>
         <div class="form-row" style="margin-bottom:8px">
           <div class="form-col f1"><div class="form-label">Group (optional)</div><select id="cGroupSel"><option value="">— No group —</option></select></div>
           <div class="form-col f1"><div class="form-label">Or new group name</div><input type="text" id="cGroupNew" placeholder="Group name..."></div>
         </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Assign to <span style="font-weight:500;color:var(--text-muted)">(multi)</span></div><div class="assign-multi" id="cAssignUser"></div></div>
+        </div>
         <div class="form-row"><button class="btn btn-primary" onclick="addChore()" style="margin-left:auto">Add chore</button></div>
-        <div class="form-hint">💡 All chores repeat daily automatically.</div>
+        <div class="form-hint">💡 Chores stay forever and reset unchecked every morning. Points support decimals (e.g. 0.5, 1.25).</div>
       </div>
       <div class="card">
         <div class="section-title" style="margin-bottom:.75rem">Add one-time task</div>
@@ -421,10 +460,14 @@ body.danger-mode .danger-banner{display:block}
           <div class="form-col w120"><div class="form-label">Date</div><input type="date" id="otDate"></div>
         </div>
         <div class="form-row" style="margin-bottom:8px">
-          <div class="form-col w80"><div class="form-label">Points</div><input type="number" id="otPts" placeholder="5" min="0"></div>
-          <div class="form-col f1"><div class="form-label">Priority</div><select id="otPriority"><option value="normal">Normal</option><option value="medium">⬆ Medium</option><option value="high">🔴 High</option></select></div>
+          <div class="form-col w80"><div class="form-label">Points</div><input type="number" id="otPts" placeholder="0.5" min="0" step="0.01"></div>
+          <div class="form-col f1"><div class="form-label">Priority</div><select id="otPriority"><option value="normal">⚪ Normal</option><option value="medium">🟡 Medium</option><option value="high">🔴 High</option></select></div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Assign to <span style="font-weight:500;color:var(--text-muted)">(multi)</span></div><div class="assign-multi" id="otAssignUser"></div></div>
         </div>
         <div class="form-row"><button class="btn btn-primary" onclick="addOneTimeTask()" style="margin-left:auto">Add task</button></div>
+        <div class="form-hint">💡 Unfinished special tasks stay on the dashboard until checked off (even after the date).</div>
       </div>
       <div class="section-hd"><div class="section-title">All chores</div></div>
       <div class="card" id="manageChoreList"></div>
@@ -440,17 +483,25 @@ body.danger-mode .danger-banner{display:block}
           <div class="form-col f1"><div class="form-label">Password</div><input type="password" id="uPassword" placeholder="••••••"></div>
         </div>
         <div class="form-row" style="margin-bottom:8px">
-          <div class="form-col f1"><div class="form-label">User type</div><select id="uType"><option value="chore">Chore user (daily tasks + points)</option><option value="task">Task scheduler (personal tasks)</option></select></div>
+          <div class="form-col f1">
+            <div class="form-label">Roles (pick one or Admin combo)</div>
+            <div class="role-checks" id="uRoleChecks">
+              <label class="role-check"><input type="checkbox" id="uRoleChore" checked><div class="role-check-body"><div class="role-check-title">Chore user</div><div class="role-check-desc">Daily chores, points, rewards</div></div></label>
+              <label class="role-check"><input type="checkbox" id="uRoleTask"><div class="role-check-body"><div class="role-check-title">Task scheduler</div><div class="role-check-desc">Personal tasks and reminders</div></div></label>
+              <label class="role-check"><input type="checkbox" id="uRoleAdmin"><div class="role-check-body"><div class="role-check-title">Admin</div><div class="role-check-desc">Full manage access without PIN. Can combine with Chore or Task (not both).</div></div></label>
+            </div>
+            <div class="form-hint">Allowed: Chore, Task, Admin, Chore+Admin, Task+Admin. Not Chore+Task.</div>
+          </div>
         </div>
         <div class="form-row"><button class="btn btn-primary" onclick="addUser()" style="margin-left:auto">Add user</button></div>
       </div>
       <div class="card" id="manageUserList"></div>
       <div class="section-hd" style="margin-top:1rem"><div class="section-title">⚙️ Settings</div></div>
       <div class="card">
-        <div class="setting-row"><div class="setting-body"><div class="setting-label">Daily target (pts)</div><div class="setting-desc">Minimum points needed each day</div></div><div class="setting-control"><input type="number" id="setTarget" min="1" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('dailyTarget','setTarget')">Save</button></div></div>
-        <div class="setting-row"><div class="setting-body"><div class="setting-label">Penalty if missed (pts)</div><div class="setting-desc">Deducted at midnight if target not hit</div></div><div class="setting-control"><input type="number" id="setPenalty" min="0" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('penaltyPts','setPenalty')">Save</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Daily target (pts)</div><div class="setting-desc">Minimum points needed each day</div></div><div class="setting-control"><input type="number" id="setTarget" min="0.01" step="0.01" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('dailyTarget','setTarget')">Save</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Penalty if missed (pts)</div><div class="setting-desc">Deducted at midnight if target not hit</div></div><div class="setting-control"><input type="number" id="setPenalty" min="0" step="0.01" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('penaltyPts','setPenalty')">Save</button></div></div>
         <div class="setting-row"><div class="setting-body"><div class="setting-label">Change parent PIN</div><div class="setting-desc">Default PIN is 1234</div></div><div class="setting-control"><button class="btn btn-sm btn-warning" onclick="showChangePinFlow()">Change PIN</button></div></div>
-        <div class="setting-row"><div class="setting-body"><div class="setting-label">Adjust bank manually</div><div class="setting-desc">Positive to add, negative to deduct</div></div><div class="setting-control"><input type="number" id="adjustAmt" placeholder="±pts" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="adjustPoints()">Apply</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Adjust bank manually</div><div class="setting-desc">Positive to add, negative to deduct</div></div><div class="setting-control"><input type="number" id="adjustAmt" placeholder="±pts" step="0.01" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="adjustPoints()">Apply</button></div></div>
       </div>
       <div class="section-hd" style="margin-top:1rem"><div class="section-title" style="color:var(--danger)">Danger zone</div></div>
       <div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -466,20 +517,21 @@ body.danger-mode .danger-banner{display:block}
       <button class="nav-btn active" id="tnav-tasks" onclick="showTaskTab('tasks')">📋 Tasks</button>
       <button class="nav-btn" id="tnav-calendar" onclick="showTaskTab('calendar')">📅 Calendar</button>
       <button class="nav-btn" id="tnav-settings" onclick="showTaskTab('settings')">⚙️ Settings</button>
+      <button class="nav-btn" id="tnav-manage" onclick="showAdminManage()" style="display:none">⚙️ Manage</button>
     </div>
     <div id="ttab-tasks">
       <div class="section-hd">
-        <div><div class="section-title">My Tasks</div><div class="section-sub" id="taskSub">All tasks</div></div>
+        <div><div class="section-title">My Tasks</div><div class="section-sub" id="taskSub">Stays until finished</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <select id="taskSort" onchange="renderTaskList()" style="padding:6px 10px;font-size:12px;width:auto"><option value="priority">Priority</option><option value="date">Date added</option><option value="eta">ETA</option></select>
-          <select id="taskFilter" onchange="renderTaskList()" style="padding:6px 10px;font-size:12px;width:auto"><option value="all">All</option><option value="pending">Pending</option><option value="deferred">Deferred</option><option value="completed">Completed</option></select>
+          <select id="taskFilter" onchange="renderTaskList()" style="padding:6px 10px;font-size:12px;width:auto"><option value="pending" selected>Pending</option><option value="deferred">Deferred</option><option value="completed">Completed</option><option value="all">All</option></select>
         </div>
       </div>
       <div class="card">
         <div class="section-title" style="font-size:13px;margin-bottom:.75rem">Add a task</div>
         <div class="form-row" style="margin-bottom:8px">
           <div class="form-col f1"><div class="form-label">Task name</div><input type="text" id="tName" placeholder="e.g. Review documents"></div>
-          <div class="form-col f1"><div class="form-label">Priority</div><select id="tPriority"><option value="medium">Medium</option><option value="high">🔴 High</option><option value="low">🟢 Low</option></select></div>
+          <div class="form-col f1"><div class="form-label">Priority</div><select id="tPriority"><option value="medium">🟡 Medium</option><option value="high">🔴 High</option><option value="low">🟢 Low</option></select></div>
         </div>
         <div class="form-row" style="margin-bottom:8px">
           <div class="form-col f1"><div class="form-label">ETA (due date)</div><input type="date" id="tEta"></div>
@@ -524,8 +576,9 @@ body.danger-mode .danger-banner{display:block}
 </div><!-- /appShell -->
 <script>
 const DEFAULT_PIN='1234';
-const DEFAULT_STATE=()=>({points:0,chores:[],rewards:[],checked:{},history:[],adminLog:[],oneTimeTasks:[],calFeeds:[],tasks:[],users:[],settings:{dailyTarget:15,penaltyPts:5,pin:DEFAULT_PIN},lastResetDate:null});
+const DEFAULT_STATE=()=>({points:0,chores:[],rewards:[],checked:{},history:[],adminLog:[],oneTimeTasks:[],calFeeds:[],tasks:[],users:[],userProgress:{},userScoped:false,settings:{dailyTarget:15,penaltyPts:5,pin:DEFAULT_PIN},lastResetDate:null});
 let S=DEFAULT_STATE(),parentUnlocked=false,activeTab='dashboard',activeTaskTab='tasks',saveTimer=null,currentUser=null;
+let impersonateUserId=null; // admin impersonation — shared across Dashboard/Rewards
 let tvSession={active:false,rewardId:null,startTime:null,intervalId:null};
 let alarmTimers=[],audioCtx=null;
 
@@ -543,6 +596,255 @@ function save(){clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,350);}
 async function flushSave(){setSyncDot('loading');try{const r=await fetch('/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)});if(!r.ok)throw new Error('HTTP '+r.status);setSyncDot('ok');}catch(e){setSyncDot('err');toast('⚠️ Save failed','err');}}
 async function deleteFromServer(){await fetch('/data',{method:'DELETE'});}
 
+// ── ROLES ──
+const VALID_ROLES=['chore','task','admin'];
+function userRoles(u){
+  if(!u)return ['chore'];
+  let roles=Array.isArray(u.roles)?u.roles.slice():null;
+  if(!roles){
+    const legacy=u.role||'chore';
+    roles=[legacy];
+  }
+  roles=[...new Set(roles.filter(r=>VALID_ROLES.includes(r)))];
+  if(!roles.length)roles=['chore'];
+  // Disallow chore+task — keep chore if both present
+  if(roles.includes('chore')&&roles.includes('task')) roles=roles.filter(r=>r!=='task');
+  return roles;
+}
+function hasRole(uOrCurrent, role){
+  const u=uOrCurrent==='current'?currentUser:uOrCurrent;
+  return userRoles(u).includes(role);
+}
+function isAdmin(){return hasRole('current','admin');}
+function canManage(){return isAdmin()||parentUnlocked;}
+function primaryShell(u){
+  const roles=userRoles(u||currentUser);
+  if(roles.includes('task')&&!roles.includes('chore')) return 'task';
+  return 'chore'; // chore, chore+admin, admin-only
+}
+function needsModeSwitcher(){
+  // Admin-only or task+admin (not chore): can flip between shells
+  return isAdmin()&&!hasRole('current','chore');
+}
+function rolesLabel(roles){return roles.join(' · ');}
+function roleBadgesHTML(roles){
+  return roles.map(r=>`<span class="role-badge ${r}">${r}</span>`).join('');
+}
+function normalizeUserRoles(u){
+  const roles=userRoles(u);
+  u.roles=roles;
+  if('role' in u) delete u.role;
+  return roles;
+}
+function migrateUsers(){
+  let changed=false;
+  (S.users||[]).forEach(u=>{
+    const hadLegacy='role' in u || !Array.isArray(u.roles);
+    const before=JSON.stringify(Array.isArray(u.roles)?u.roles:null);
+    normalizeUserRoles(u);
+    if(hadLegacy || before!==JSON.stringify(u.roles)) changed=true;
+  });
+  return changed;
+}
+function readRoleChecks(prefix){
+  const chore=!!document.getElementById(prefix+'Chore')?.checked;
+  const task=!!document.getElementById(prefix+'Task')?.checked;
+  const admin=!!document.getElementById(prefix+'Admin')?.checked;
+  const roles=[];
+  if(chore)roles.push('chore');
+  if(task)roles.push('task');
+  if(admin)roles.push('admin');
+  return validateRoles(roles);
+}
+function validateRoles(roles){
+  roles=[...new Set((roles||[]).filter(r=>VALID_ROLES.includes(r)))];
+  if(!roles.length) return {ok:false,error:'Pick at least one role',roles:[]};
+  if(roles.includes('chore')&&roles.includes('task')) return {ok:false,error:'Cannot combine Chore + Task. Use Chore+Admin or Task+Admin.',roles};
+  return {ok:true,error:'',roles};
+}
+function setRoleChecks(prefix, roles){
+  const r=userRoles({roles});
+  const c=document.getElementById(prefix+'Chore');
+  const t=document.getElementById(prefix+'Task');
+  const a=document.getElementById(prefix+'Admin');
+  if(c)c.checked=r.includes('chore');
+  if(t)t.checked=r.includes('task');
+  if(a)a.checked=r.includes('admin');
+}
+function sessionUser(user){
+  return {id:user.id,username:user.username,roles:userRoles(user),soundPref:user.soundPref||'on'};
+}
+function adminCount(){return (S.users||[]).filter(u=>userRoles(u).includes('admin')).length;}
+
+// ── USER SCOPE (per-user dashboard / rewards / progress) ──
+function choreCapableUsers(){
+  return (S.users||[]).filter(u=>userRoles(u).includes('chore')||userRoles(u).includes('admin'));
+}
+function findUserByUsername(name){
+  return (S.users||[]).find(u=>(u.username||'').toLowerCase()===String(name).toLowerCase());
+}
+function usernameById(id){
+  const u=(S.users||[]).find(x=>x.id===id);
+  return u?u.username:id||'?';
+}
+function activeUserId(){
+  if(!currentUser)return null;
+  if(isAdmin()) return impersonateUserId||null;
+  return currentUser.id;
+}
+function ensureProgress(uid){
+  if(!uid)return null;
+  if(!S.userProgress)S.userProgress={};
+  if(!S.userProgress[uid]){
+    S.userProgress[uid]={points:0,checked:{},lastResetDate:null,history:[]};
+  }
+  const p=S.userProgress[uid];
+  if(!p.checked||typeof p.checked!=='object')p.checked={};
+  if(!Array.isArray(p.history))p.history=[];
+  if(typeof p.points!=='number')p.points=0;
+  return p;
+}
+function prog(uid){
+  const id=uid||activeUserId();
+  if(!id)return null;
+  return ensureProgress(id);
+}
+function myChores(){
+  const uid=activeUserId();
+  if(!uid)return [];
+  return (S.chores||[]).filter(c=>c.userId===uid);
+}
+function myRewards(){
+  const uid=activeUserId();
+  if(!uid)return [];
+  return (S.rewards||[]).filter(r=>r.userId===uid);
+}
+function myOneTimes(){
+  const uid=activeUserId();
+  if(!uid)return [];
+  return (S.oneTimeTasks||[]).filter(t=>t.userId===uid);
+}
+function defaultAssignUserId(){
+  if(impersonateUserId)return impersonateUserId;
+  const m=findUserByUsername('maahira');
+  if(m)return m.id;
+  const choreUsers=(S.users||[]).filter(u=>userRoles(u).includes('chore'));
+  return choreUsers[0]?.id||(S.users[0]&&S.users[0].id)||'';
+}
+function getSelectedAssignIds(containerId){
+  const el=document.getElementById(containerId);if(!el)return [];
+  return [...el.querySelectorAll('input[type="checkbox"]:checked')].map(c=>c.value).filter(Boolean);
+}
+function fillAssignSelects(){
+  const opts=choreCapableUsers();
+  const def=defaultAssignUserId();
+  ['cAssignUser','otAssignUser','rAssignUser'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const prev=new Set(getSelectedAssignIds(id));
+    if(!prev.size&&def)prev.add(def);
+    el.innerHTML=opts.length
+      ? opts.map(u=>`<label class="assign-multi-opt"><input type="checkbox" value="${u.id}"${prev.has(u.id)?' checked':''}>${esc(cap(u.username))}</label>`).join('')
+      : '<span style="font-size:12px;color:var(--text-muted)">No users</span>';
+  });
+}
+function fillViewAsSelect(){
+  const wrap=document.getElementById('viewAsWrap');
+  const sel=document.getElementById('viewAsSelect');
+  if(!wrap||!sel)return;
+  const show=isAdmin();
+  wrap.classList.toggle('visible',!!show);
+  if(!show)return;
+  const users=(S.users||[]).filter(u=>userRoles(u).includes('chore'));
+  // Also include any user who already has assigned chores
+  const withChores=new Set((S.chores||[]).map(c=>c.userId).filter(Boolean));
+  (S.users||[]).forEach(u=>{if(withChores.has(u.id)&&!users.find(x=>x.id===u.id))users.push(u);});
+  sel.innerHTML='<option value="">— Select a user —</option>'+users.map(u=>`<option value="${u.id}">${esc(cap(u.username))}</option>`).join('');
+  sel.value=impersonateUserId||'';
+}
+function onImpersonateChange(){
+  const sel=document.getElementById('viewAsSelect');
+  impersonateUserId=sel&&sel.value?sel.value:null;
+  try{
+    if(impersonateUserId)sessionStorage.setItem('chomp_viewas',impersonateUserId);
+    else sessionStorage.removeItem('chomp_viewas');
+  }catch(e){}
+  fillAssignSelects();
+  updateBank();
+  if(activeTab==='dashboard')renderDashboard();
+  else if(activeTab==='rewards'){renderRewardMode();renderRewards();}
+  else if(activeTab==='history')renderHistory();
+  else if(activeTab==='calendar')renderCalendarTab();
+  else if(activeTab==='manage')renderManage();
+}
+function restoreImpersonation(){
+  if(!isAdmin()){impersonateUserId=null;return;}
+  try{
+    const saved=sessionStorage.getItem('chomp_viewas');
+    if(saved&&(S.users||[]).some(u=>u.id===saved))impersonateUserId=saved;
+    else impersonateUserId=null;
+  }catch(e){impersonateUserId=null;}
+}
+function hasActiveView(){return !!activeUserId();}
+function emptyViewHTML(kind){
+  if(isAdmin()&&!impersonateUserId){
+    return `<div class="empty"><div class="empty-icon">👤</div>Select a user in <strong>Impersonate</strong> to see their ${kind}.</div>`;
+  }
+  return `<div class="empty"><div class="empty-icon">📋</div>No ${kind} yet.</div>`;
+}
+
+/** One-time safe migration: assign unscoped data to maahira; move global progress under her. */
+function migrateUserScoped(){
+  if(S.userScoped)return false;
+  let changed=false;
+  if(!S.userProgress||typeof S.userProgress!=='object'){S.userProgress={};changed=true;}
+
+  let maahira=findUserByUsername('maahira');
+  if(!maahira&&(S.users||[]).length){
+    // Prefer first chore user if maahira missing
+    maahira=(S.users||[]).find(u=>userRoles(u).includes('chore'))||S.users[0];
+  }
+  const mid=maahira?maahira.id:null;
+
+  if(mid){
+    (S.chores||[]).forEach(c=>{
+      if(!c.userId){c.userId=mid;changed=true;}
+    });
+    (S.rewards||[]).forEach(r=>{
+      if(!r.userId){r.userId=mid;changed=true;}
+    });
+    (S.oneTimeTasks||[]).forEach(t=>{
+      if(!t.userId){t.userId=mid;changed=true;}
+    });
+
+    const p=ensureProgress(mid);
+    // Move legacy global progress into maahira only once
+    const legacyPoints=typeof S.points==='number'?S.points:0;
+    const legacyChecked=S.checked&&typeof S.checked==='object'?S.checked:{};
+    const legacyHistory=Array.isArray(S.history)?S.history:[];
+    const legacyReset=S.lastResetDate||null;
+    const hasLegacy=legacyPoints!==0||Object.keys(legacyChecked).length>0||legacyHistory.length>0||!!legacyReset;
+    const progressEmpty=(!p.points||p.points===0)&&(!p.checked||!Object.keys(p.checked).length)&&(!p.history||!p.history.length)&&!p.lastResetDate;
+    if(hasLegacy&&progressEmpty){
+      p.points=legacyPoints;
+      p.checked={...legacyChecked};
+      p.history=legacyHistory.slice();
+      p.lastResetDate=legacyReset;
+      changed=true;
+    }
+  }
+
+  // Clear legacy globals so they cannot double-apply
+  if(S.points!==0){S.points=0;changed=true;}
+  if(S.checked&&Object.keys(S.checked).length){S.checked={};changed=true;}
+  if(Array.isArray(S.history)&&S.history.length){S.history=[];changed=true;}
+  if(S.lastResetDate!=null){S.lastResetDate=null;changed=true;}
+
+  S.userScoped=true;
+  changed=true;
+  return changed;
+}
+
+
 // ── BOOT ──
 async function initApp(){
   document.getElementById('offlineScreen').classList.add('hidden');
@@ -550,12 +852,16 @@ async function initApp(){
   document.getElementById('appShell').style.display='none';
   try{setSyncDot('loading');await loadFromServer();setSyncDot('ok');}
   catch(e){document.getElementById('offlineScreen').classList.remove('hidden');return;}
+  let needSave=false;
   if(!S.users||S.users.length===0){
     S.users=[];
     const h=await sha256('cherry');
-    S.users.push({id:uid(),username:'maahira',passwordHash:h,role:'chore',createdAt:new Date().toISOString()});
-    await flushSave();
+    S.users.push({id:uid(),username:'maahira',passwordHash:h,roles:['chore'],createdAt:new Date().toISOString()});
+    needSave=true;
   }
+  if(migrateUsers()) needSave=true;
+  if(migrateUserScoped()) needSave=true;
+  if(needSave) await flushSave();
   // Restore session from localStorage (survives page refresh)
   try{
     const saved=localStorage.getItem('chomp_session');
@@ -563,7 +869,8 @@ async function initApp(){
       const sess=JSON.parse(saved);
       const user=S.users.find(u=>u.id===sess.id);
       if(user){
-        currentUser={id:user.id,username:user.username,role:user.role||'chore',soundPref:user.soundPref||'on'};
+        currentUser=sessionUser(user);
+        restoreImpersonation();
         enterApp();
         return;
       }
@@ -580,16 +887,41 @@ const todayStr=()=>new Date().toLocaleDateString('en-CA');
 const fmtTime=()=>new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 const fmtDate=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});}catch(e){return d;}};
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const round2=n=>Math.round((Number(n)+Number.EPSILON)*100)/100;
+function fmtPts(n){const x=round2(n);return x.toFixed(2).replace(/\.?0+$/,'');}
+/** Parse a points value; rounds to 2 decimals. Returns null if invalid. */
+function parsePts(raw,{min=0.01,allowZero=false}={}){
+  if(raw===''||raw==null)return null;
+  const v=round2(parseFloat(raw));
+  if(isNaN(v))return null;
+  if(allowZero&&v===0)return 0;
+  if(v<min)return null;
+  return v;
+}
+function addToBank(delta,uid){
+  const p=prog(uid);
+  if(!p)return 0;
+  p.points=round2((p.points||0)+delta);
+  return p.points;
+}
 function deepMerge(t,s){const o={...t};for(const k in s){if(s[k]&&typeof s[k]==='object'&&!Array.isArray(s[k]))o[k]=deepMerge(t[k]||{},s[k]);else o[k]=s[k];}return o;}
-function groups(){return[...new Set(S.chores.filter(c=>c.group).map(c=>c.group))];}
-function groupChores(g){return S.chores.filter(c=>c.group===g);}
-function isGroupDone(g){const m=groupChores(g);return m.length>0&&m.every(c=>S.checked[c.id]);}
-function groupPts(g){return groupChores(g).reduce((s,c)=>s+c.pts,0);}
-function todayEarned(){
-  const solo=S.chores.filter(c=>!c.group&&S.checked[c.id]).reduce((s,c)=>s+c.pts,0);
-  const grp=groups().filter(g=>isGroupDone(g)).reduce((s,g)=>s+groupPts(g),0);
-  const ot=(S.oneTimeTasks||[]).filter(t=>t.date===todayStr()&&t.done).reduce((s,t)=>s+(t.pts||0),0);
-  return solo+grp+ot;
+function groups(list){const src=list||myChores();return[...new Set(src.filter(c=>c.group).map(c=>c.group))];}
+function groupChores(g,list){const src=list||myChores();return src.filter(c=>c.group===g);}
+function isGroupDone(g,list,uid){const m=groupChores(g,list);const p=prog(uid);if(!p||!m.length)return false;return m.every(c=>p.checked[c.id]);}
+function groupPts(g,list){return round2(groupChores(g,list).reduce((s,c)=>s+(c.pts||0),0));}
+function todayEarned(uid){
+  const chores=uid? (S.chores||[]).filter(c=>c.userId===uid): myChores();
+  const p=prog(uid); if(!p)return 0;
+  const solo=chores.filter(c=>!c.group&&p.checked[c.id]).reduce((s,c)=>s+(c.pts||0),0);
+  const grp=groups(chores).filter(g=>isGroupDone(g,chores,uid)).reduce((s,g)=>s+groupPts(g,chores),0);
+  const ots=uid? (S.oneTimeTasks||[]).filter(t=>t.userId===uid): myOneTimes();
+  const ot=ots.filter(t=>t.date===todayStr()&&t.done).reduce((s,t)=>s+(t.pts||0),0);
+  return round2(solo+grp+ot);
+}
+function assigneeBadge(uid){return `<span class="tag tag-solo">${esc(cap(usernameById(uid)||'?'))}</span>`;}
+function assignOptionsHTML(selectedId){
+  const def=selectedId||defaultAssignUserId();
+  return choreCapableUsers().map(u=>`<option value="${u.id}"${u.id===def?' selected':''}>${esc(cap(u.username))}</option>`).join('')||'<option value="">No users</option>';
 }
 
 // ── AUTH ──
@@ -603,47 +935,81 @@ async function doLogin(){
   const h=await sha256(pw);
   const user=S.users.find(u=>u.username.toLowerCase()===un&&u.passwordHash===h);
   if(!user){err.textContent='Incorrect username or password';document.getElementById('loginPassword').value='';return;}
-  currentUser={id:user.id,username:user.username,role:user.role||'chore',soundPref:user.soundPref||'on'};
-  // Persist session — survives page refresh; cleared only on logout
+  currentUser=sessionUser(user);
   try{localStorage.setItem('chomp_session',JSON.stringify({id:user.id}));}catch(e){}
   enterApp();
 }
 function enterApp(){
-  // Parent unlock never persists across refresh — must re-enter PIN
-  parentUnlocked=false;
+  parentUnlocked=isAdmin();
+  restoreImpersonation();
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appShell').style.display='';
   document.getElementById('userAvatar').textContent=currentUser.username.slice(0,2).toUpperCase();
   document.getElementById('userGreeting').textContent='Hey '+cap(currentUser.username)+'!';
-  if(currentUser.role==='task'){
-    document.getElementById('choreShell').style.display='none';
-    document.getElementById('taskShell').style.display='';
-    showTaskTab('tasks'); startReminderLoop(); refreshCalendar();
+  fillViewAsSelect();
+  fillAssignSelects();
+  updateModeSwitchUI();
+  const shell=primaryShell();
+  switchAppMode(shell, true);
+}
+function switchAppMode(mode, initial){
+  const choreShell=document.getElementById('choreShell');
+  const taskShell=document.getElementById('taskShell');
+  if(mode==='task'){
+    choreShell.style.display='none';
+    taskShell.style.display='';
+    showTaskTab(activeTaskTab||'tasks');
+    startReminderLoop();
+    refreshCalendar();
   } else {
-    document.getElementById('choreShell').style.display='';
-    document.getElementById('taskShell').style.display='none';
-    midnightCheck(); scheduleNextMidnight(); updateBank(); renderDashboard(); updateLockUI(); refreshCalendar();
+    taskShell.style.display='none';
+    choreShell.style.display='';
+    midnightCheck(); scheduleNextMidnight(); updateBank();
+    if(initial || activeTab==='dashboard') renderDashboard();
+    else showTab(activeTab||'dashboard');
+    refreshCalendar();
   }
+  updateModeSwitchUI(mode);
+  updateLockUI();
+}
+function updateModeSwitchUI(activeMode){
+  const sw=document.getElementById('modeSwitch');
+  const show=needsModeSwitcher();
+  if(sw) sw.classList.toggle('visible', !!show);
+  if(!show) return;
+  const mode=activeMode || (document.getElementById('taskShell').style.display!=='none'?'task':'chore');
+  const cb=document.getElementById('modeChoresBtn'), tb=document.getElementById('modeTasksBtn');
+  if(cb) cb.classList.toggle('active', mode==='chore');
+  if(tb) tb.classList.toggle('active', mode==='task');
+}
+function showAdminManage(){
+  if(!canManage()){toast('Admin access required','warn');return;}
+  switchAppMode('chore');
+  showTab('manage');
 }
 function doLogout(){
-  currentUser=null;parentUnlocked=false;
-  try{localStorage.removeItem('chomp_session');}catch(e){}
+  currentUser=null;parentUnlocked=false;impersonateUserId=null;
+  try{localStorage.removeItem('chomp_session');sessionStorage.removeItem('chomp_viewas');}catch(e){}
   alarmTimers.forEach(clearTimeout);alarmTimers=[];
   if(tvSession.active){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
+  const sw=document.getElementById('modeSwitch'); if(sw) sw.classList.remove('visible');
+  const vw=document.getElementById('viewAsWrap'); if(vw) vw.classList.remove('visible');
   showLogin();
 }
 async function addUser(){
   const un=document.getElementById('uUsername').value.trim().toLowerCase();
   const pw=document.getElementById('uPassword').value;
-  const role=document.getElementById('uType').value;
+  const vr=readRoleChecks('uRole');
   if(!un){toast('Enter username','err');return;}
   if(!pw||pw.length<3){toast('Password min 3 chars','err');return;}
+  if(!vr.ok){toast(vr.error,'err');return;}
   if(S.users.find(u=>u.username.toLowerCase()===un)){toast('Username exists','err');return;}
   const h=await sha256(pw);
-  S.users.push({id:uid(),username:un,passwordHash:h,role,createdAt:new Date().toISOString()});
+  S.users.push({id:uid(),username:un,passwordHash:h,roles:vr.roles,createdAt:new Date().toISOString()});
   document.getElementById('uUsername').value='';document.getElementById('uPassword').value='';
-  logAdmin('user-add',`User added: "${un}"`,`role: ${role}`);
-  save();renderManage();toast(`User "${un}" (${role}) added!`,'ok');
+  setRoleChecks('uRole',['chore']);
+  logAdmin('user-add',`User added: "${un}"`,`roles: ${rolesLabel(vr.roles)}`);
+  save();renderManage();toast(`User "${un}" (${rolesLabel(vr.roles)}) added!`,'ok');
 }
 async function changeUserPassword(id){
   const p=prompt('New password:');if(!p||p.length<3){if(p!==null)toast('Too short','err');return;}
@@ -658,9 +1024,41 @@ async function selfChangePassword(){
 function removeUser(id){
   const u=S.users.find(x=>x.id===id);if(!u)return;
   if(S.users.length<=1){toast("Can't remove last user",'err');return;}
+  if(userRoles(u).includes('admin')&&adminCount()<=1){toast("Can't remove the last Admin",'err');return;}
   if(!confirm(`Remove "${u.username}"?`))return;
-  logAdmin('user-remove',`User removed: "${u.username}"`,`was ${u.role} user`);
+  logAdmin('user-remove',`User removed: "${u.username}"`,`was ${rolesLabel(userRoles(u))}`);
   S.users=S.users.filter(x=>x.id!==id);save();renderManage();toast(`Removed "${u.username}"`,'info');
+}
+function toggleEditUser(id){
+  const p=document.getElementById('user-edit-'+id);if(!p)return;
+  const open=p.style.display!=='none';
+  document.querySelectorAll('[id^="user-edit-"]').forEach(x=>x.style.display='none');
+  if(!open){
+    const u=S.users.find(x=>x.id===id);if(!u)return;
+    setRoleChecks('ue-'+id+'-', userRoles(u));
+    p.style.display='';
+  }
+}
+function saveUserRoles(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  const vr=readRoleChecks('ue-'+id+'-');
+  if(!vr.ok){toast(vr.error,'err');return;}
+  const wasAdmin=userRoles(u).includes('admin');
+  const willAdmin=vr.roles.includes('admin');
+  if(wasAdmin&&!willAdmin&&adminCount()<=1){toast("Can't remove Admin from the last Admin",'err');return;}
+  const oldRoles=userRoles(u);
+  u.roles=vr.roles; if('role' in u) delete u.role;
+  logAdmin('setting-change',`Roles updated: "${u.username}"`,`${rolesLabel(oldRoles)} → ${rolesLabel(vr.roles)}`);
+  save();
+  if(currentUser&&currentUser.id===id){
+    currentUser.roles=vr.roles.slice();
+    parentUnlocked=isAdmin();
+    updateModeSwitchUI();
+    updateLockUI();
+    switchAppMode(primaryShell());
+  }
+  renderManage();
+  toast(`Roles updated for "${u.username}"`,'ok');
 }
 function saveSoundPref(){
   const v=document.getElementById('soundPref').value;currentUser.soundPref=v;
@@ -671,50 +1069,71 @@ function saveSoundPref(){
 function toast(m,t='info'){const w=document.getElementById('toast-wrap'),el=document.createElement('div');el.className='toast '+({ok:'t-ok',err:'t-err',info:'t-info',warn:'t-warn'}[t]||'t-info');el.textContent=m;w.appendChild(el);setTimeout(()=>el.remove(),3000);}
 
 // ── HISTORY ──
-function getTodayHistory(){const d=todayStr();let h=S.history.find(x=>x.date===d);if(!h){h={date:d,entries:[],dailyEarned:0,dailySpent:0,penalty:0};S.history.unshift(h);}return h;}
-function logEntry(type,label,pts){
-  const h=getTodayHistory();
+function getTodayHistory(uid){
+  const p=prog(uid); if(!p)return {date:todayStr(),entries:[],dailyEarned:0,dailySpent:0,penalty:0};
+  const d=todayStr();let h=p.history.find(x=>x.date===d);
+  if(!h){h={date:d,entries:[],dailyEarned:0,dailySpent:0,penalty:0};p.history.unshift(h);}
+  return h;
+}
+function logEntry(type,label,pts,uid){
+  const h=getTodayHistory(uid);
+  pts=round2(pts);
   h.entries.push({type,label,pts,time:fmtTime()});
-  if(type==='chore'||type==='bonus')h.dailyEarned+=Math.max(0,pts);
-  if(type==='reward'||type==='penalty')h.dailySpent+=Math.abs(pts);
+  if(type==='chore'||type==='bonus')h.dailyEarned=round2(h.dailyEarned+Math.max(0,pts));
+  if(type==='reward'||type==='penalty')h.dailySpent=round2(h.dailySpent+Math.abs(pts));
   purgeOldHistory();
   save();
 }
-// Admin log — only visible when parentUnlocked
 function logAdmin(type,label,detail=''){
   if(!S.adminLog)S.adminLog=[];
   S.adminLog.unshift({type,label,detail,date:todayStr(),time:fmtTime()});
-  // Keep max 30 days of admin entries too
   purgeOldHistory();
   save();
 }
 function purgeOldHistory(){
   const cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
   const cutoffStr=cutoff.toLocaleDateString('en-CA');
-  if(S.history)S.history=S.history.filter(h=>h.date>=cutoffStr);
+  Object.values(S.userProgress||{}).forEach(p=>{
+    if(p&&Array.isArray(p.history))p.history=p.history.filter(h=>h.date>=cutoffStr);
+  });
   if(S.adminLog)S.adminLog=S.adminLog.filter(e=>e.date>=cutoffStr);
 }
 
 // ── BANK ──
 function updateBank(){
-  const pts=S.points;
   const el=document.getElementById('bankPts');
-  el.textContent=(pts<0?'−':'')+Math.abs(pts);
+  if(!hasActiveView()){
+    if(el){el.textContent='—';el.className='bank-pts zero';}
+    document.getElementById('bankCard').className='bank-card';
+    document.body.classList.remove('danger-mode');
+    document.getElementById('targetBar').style.width='0%';
+    document.getElementById('targetLabel').innerHTML='<strong>0</strong> / '+fmtPts(S.settings.dailyTarget)+' pts';
+    document.getElementById('bankProgress').textContent=isAdmin()?'Select a user':'No user';
+    document.getElementById('bankSub').textContent=isAdmin()?'Choose someone to impersonate':'';
+    document.getElementById('bankDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+    return;
+  }
+  const p=prog();
+  p.points=round2(p.points||0);
+  const pts=p.points;
+  const chores=myChores();
+  el.textContent=(pts<0?'−':'')+fmtPts(Math.abs(pts));
   el.className='bank-pts '+(pts>0?'positive':pts<0?'negative':'zero');
   document.getElementById('bankCard').className='bank-card'+(pts<0?' negative':'');
   document.body.classList.toggle('danger-mode',pts<0);
-  const earned=todayEarned(),target=S.settings.dailyTarget,pct=Math.min(100,Math.round((earned/target)*100));
+  const earned=todayEarned(),target=S.settings.dailyTarget,pct=target>0?Math.min(100,Math.round((earned/target)*100)):0;
   const bar=document.getElementById('targetBar');bar.style.width=pct+'%';bar.className='progress-fill'+(earned>=target?' hit':pts<0?' danger':'');
-  document.getElementById('targetLabel').innerHTML=`<strong>${earned}</strong> / ${target} pts`;
-  const done=S.chores.filter(c=>S.checked[c.id]).length,total=S.chores.length;
+  document.getElementById('targetLabel').innerHTML=`<strong>${fmtPts(earned)}</strong> / ${fmtPts(target)} pts`;
+  const done=chores.filter(c=>p.checked[c.id]).length,total=chores.length;
   document.getElementById('bankProgress').innerHTML=total>0?`<strong>${done}</strong>/${total} done`:'No chores set up';
-  document.getElementById('bankSub').textContent=pts===0?'Start checking off chores!':pts>0?`${pts} pt${pts!==1?'s':''} saved up`:`${Math.abs(pts)} pt${Math.abs(pts)!==1?'s':''} in debt`;
+  const who=isAdmin()?` · ${cap(usernameById(activeUserId()))}`:'';
+  document.getElementById('bankSub').textContent=(pts===0?'Start checking off chores!':pts>0?`${fmtPts(pts)} pt${Math.abs(pts)!==1?'s':''} saved up`:`${fmtPts(Math.abs(pts))} pt${Math.abs(pts)!==1?'s':''} in debt`)+who;
   document.getElementById('bankDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
 }
 
 // ── PIN ──
 let pinBuffer='',pinCallback=null,pinMode='verify',pinNewTemp='';
-function requirePin(cb){pinBuffer='';pinCallback=cb;pinMode='verify';document.getElementById('pinModalTitle').textContent='🔒 Parent Access';document.getElementById('pinModalSub').textContent='Enter PIN';document.getElementById('pinError').textContent='';updatePinDots();document.getElementById('pinModal').classList.add('open');}
+function requirePin(cb){if(isAdmin()){cb&&cb();return;}pinBuffer='';pinCallback=cb;pinMode='verify';document.getElementById('pinModalTitle').textContent='🔒 Parent Access';document.getElementById('pinModalSub').textContent='Enter PIN';document.getElementById('pinError').textContent='';updatePinDots();document.getElementById('pinModal').classList.add('open');}
 function showChangePinFlow(){pinBuffer='';pinMode='verify';pinCallback=()=>{pinBuffer='';pinMode='set-new';document.getElementById('pinModalTitle').textContent='🔑 New PIN';document.getElementById('pinModalSub').textContent='Enter new PIN';document.getElementById('pinError').textContent='';updatePinDots();document.getElementById('pinModal').classList.add('open');};document.getElementById('pinModalTitle').textContent='🔒 Current PIN';document.getElementById('pinModalSub').textContent='Enter current PIN';document.getElementById('pinError').textContent='';updatePinDots();document.getElementById('pinModal').classList.add('open');}
 function pinKey(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updatePinDots();if(pinBuffer.length===4)setTimeout(checkPin,120);}
 function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updatePinDots();}
@@ -744,6 +1163,7 @@ function checkPin(){
 
 // ── LOCK ──
 function handleLockToggle(){
+  if(isAdmin()){toast('Admin access is always on — no PIN needed','info');return;}
   if(parentUnlocked){
     parentUnlocked=false;
     updateLockUI();
@@ -768,19 +1188,28 @@ function handleLockToggle(){
 function updateLockUI(){
   const b=document.getElementById('lockBtn'),ic=document.getElementById('lockIcon');
   const mn=document.getElementById('nav-manage'),rb=document.getElementById('resetDayBtn');
+  const tmn=document.getElementById('tnav-manage');
   const adminOpt=document.getElementById('historyFilterAdmin');
   const histFilter=document.getElementById('historyFilter');
-  if(parentUnlocked){
-    if(b){b.className='lock-btn unlocked';b.title='Click to lock';}
+  const managed=canManage();
+  if(isAdmin()){
+    if(b) b.style.display='none';
+    parentUnlocked=true;
+  } else {
+    if(b) b.style.display='';
+  }
+  if(managed){
+    if(b&&!isAdmin()){b.className='lock-btn unlocked';b.title='Click to lock';}
     if(ic)ic.innerHTML='<rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-1"/>';
     if(mn)mn.style.display='';if(rb)rb.style.display='';
+    if(tmn)tmn.style.display=isAdmin()?'':'none';
     if(adminOpt)adminOpt.style.display='';
   } else {
     if(b){b.className='lock-btn locked';b.title='Parent access';}
     if(ic)ic.innerHTML='<rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>';
     if(mn)mn.style.display='none';if(rb)rb.style.display='none';
+    if(tmn)tmn.style.display='none';
     if(adminOpt)adminOpt.style.display='none';
-    // Reset admin filter when locking so admin view can't stick
     if(histFilter&&histFilter.value==='admin') histFilter.value='all';
   }
   if(activeTab==='rewards') renderRewardMode();
@@ -790,7 +1219,7 @@ function updateLockUI(){
 
 // ── TABS ──
 function showTab(tab){
-  if(tab==='manage'&&!parentUnlocked){toast('Unlock parent access first 🔒','warn');return;}
+  if(tab==='manage'&&!canManage()){toast(isAdmin()?'Admin access required':'Unlock parent access first 🔒','warn');return;}
   ['dashboard','rewards','history','calendar','manage'].forEach(t=>{const e=document.getElementById('tab-'+t);if(e)e.style.display=t===tab?'':'none';const n=document.getElementById('nav-'+t);if(n)n.classList.toggle('active',t===tab);});
   activeTab=tab;
   if(tab==='dashboard')renderDashboard();
@@ -801,6 +1230,8 @@ function showTab(tab){
 }
 function showTaskTab(tab){
   ['tasks','calendar','settings'].forEach(t=>{const e=document.getElementById('ttab-'+t);if(e)e.style.display=t===tab?'':'none';const n=document.getElementById('tnav-'+t);if(n)n.classList.toggle('active',t===tab);});
+  const tmn=document.getElementById('tnav-manage');
+  if(tmn) tmn.classList.remove('active');
   activeTaskTab=tab;
   if(tab==='tasks'){renderTaskList();renderTaskCalDash();}
   if(tab==='calendar')renderTaskCalendarTab();
@@ -811,83 +1242,126 @@ function showTaskTab(tab){
 const CHK_SVG='<svg width="12" height="12" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
 function renderDashboard(){
   const list=document.getElementById('choreList');
-  if(!S.chores.length){list.innerHTML='<div class="empty"><div class="empty-icon">📋</div>No chores yet — unlock Manage to add some!</div>';document.getElementById('dashSub').textContent='No chores set up';renderOneTimeTasks();renderCalDash();return;}
-  const grps=groups(),solos=S.chores.filter(c=>!c.group);let html='';
+  if(!hasActiveView()){
+    list.innerHTML=emptyViewHTML('dashboard');
+    document.getElementById('dashSub').textContent=isAdmin()?'Select a user to view their dashboard':'';
+    document.getElementById('onetimeSection').style.display='none';
+    renderCalDash();
+    return;
+  }
+  const chores=myChores();
+  const p=prog();
+  if(!chores.length){list.innerHTML='<div class="empty"><div class="empty-icon">📋</div>No chores yet — unlock Manage to add some!</div>';document.getElementById('dashSub').textContent='No chores set up';renderOneTimeTasks();renderCalDash();return;}
+  const grps=groups(chores),solos=chores.filter(c=>!c.group);let html='';
   grps.forEach(g=>{
-    const members=groupChores(g),dc=members.filter(c=>S.checked[c.id]).length,tc=members.length,done=dc===tc,gp=groupPts(g),pct=tc>0?Math.round((dc/tc)*100):0;
-    html+=`<div class="chore-item group-head ${done?'done':''}"><div style="width:24px;height:24px;border-radius:50%;background:${done?'var(--success)':'var(--accent-light)'};border:2px solid ${done?'var(--success)':'var(--accent-border)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:${done?'#fff':'var(--accent)'};flex-shrink:0">${done?'✓':'G'}</div><div class="chore-body"><div class="chore-name">${esc(g)} <span class="tag tag-group">group</span></div><div class="chore-meta">${dc}/${tc} done · ${gp} pts when all complete</div><div class="progress-track-sm"><div class="progress-fill-sm ${done?'done':''}" style="width:${pct}%"></div></div></div><div class="pts-badge ${done?'earned':'locked'}">${done?'✓ ':'🔒 '}${gp}</div></div>`;
-    members.forEach(c=>{const ck=!!S.checked[c.id];html+=`<div class="chore-item group-child ${ck?'done':''}" onclick="toggleChore('${c.id}')"><div class="chore-check ${ck?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(c.name)}</div></div><div class="pts-badge locked">${c.pts}</div></div>`;});
+    const members=groupChores(g,chores),dc=members.filter(c=>p.checked[c.id]).length,tc=members.length,done=dc===tc,gp=groupPts(g,chores),pct=tc>0?Math.round((dc/tc)*100):0;
+    html+=`<div class="chore-item group-head ${done?'done':''}"><div style="width:24px;height:24px;border-radius:50%;background:${done?'var(--success)':'var(--accent-light)'};border:2px solid ${done?'var(--success)':'var(--accent-border)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:${done?'#fff':'var(--accent)'};flex-shrink:0">${done?'✓':'G'}</div><div class="chore-body"><div class="chore-name">${esc(g)} <span class="tag tag-group">group</span></div><div class="chore-meta">${dc}/${tc} done · ${fmtPts(gp)} pts when all complete</div><div class="progress-track-sm"><div class="progress-fill-sm ${done?'done':''}" style="width:${pct}%"></div></div></div><div class="pts-badge ${done?'earned':'locked'}">${done?'✓ ':'🔒 '}${fmtPts(gp)}</div></div>`;
+    members.forEach(c=>{const ck=!!p.checked[c.id];html+=`<div class="chore-item group-child ${ck?'done':''}" onclick="toggleChore('${c.id}')"><div class="chore-check ${ck?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(c.name)}</div></div><div class="pts-badge locked">${fmtPts(c.pts)}</div></div>`;});
   });
-  solos.forEach(c=>{const ck=!!S.checked[c.id];html+=`<div class="chore-item ${ck?'done':''}" onclick="toggleChore('${c.id}')"><div class="chore-check ${ck?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(c.name)}</div><div class="chore-meta">Individual · ${c.pts} pts</div></div><div class="pts-badge ${ck?'earned':''}">${ck?'✓ ':'+'} ${c.pts}</div></div>`;});
+  solos.forEach(c=>{const ck=!!p.checked[c.id];html+=`<div class="chore-item ${ck?'done':''}" onclick="toggleChore('${c.id}')"><div class="chore-check ${ck?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(c.name)}</div><div class="chore-meta">Individual · ${fmtPts(c.pts)} pts</div></div><div class="pts-badge ${ck?'earned':''}">${ck?'✓ ':'+'} ${fmtPts(c.pts)}</div></div>`;});
   list.innerHTML=html;
-  const dt=S.chores.filter(c=>S.checked[c.id]).length,all=S.chores.length;
+  const dt=chores.filter(c=>p.checked[c.id]).length,all=chores.length;
   document.getElementById('dashSub').textContent=dt===all&&all>0?'🎉 All done! Amazing work!':dt===0?'Tap a chore to mark it done':`${dt} of ${all} completed`;
   renderOneTimeTasks();renderCalDash();
 }
 function renderOneTimeTasks(){
-  const today=todayStr(),tasks=(S.oneTimeTasks||[]).filter(t=>t.date===today),sec=document.getElementById('onetimeSection');
+  const today=todayStr();
+  const sec=document.getElementById('onetimeSection');
+  if(!hasActiveView()){if(sec)sec.style.display='none';return;}
+  const tasks=myOneTimes().filter(t=>(!t.done&&t.date<=today)||(t.done&&t.date===today));
+  const title=sec?.querySelector('.section-title');
   if(!tasks.length){sec.style.display='none';return;}
   sec.style.display='';
-  const sorted=[...tasks].sort((a,b)=>({high:0,medium:1,normal:2}[a.priority]||2)-({high:0,medium:1,normal:2}[b.priority]||2));
+  if(title){
+    const overdue=tasks.filter(t=>!t.done&&t.date<today).length;
+    title.textContent=overdue?`📌 Special tasks (${overdue} overdue)`:'📌 Special tasks';
+  }
+  const sorted=[...tasks].sort((a,b)=>{
+    if(a.done!==b.done) return a.done?1:-1;
+    if(a.date!==b.date) return a.date.localeCompare(b.date);
+    return ({high:0,medium:1,normal:2}[a.priority]||2)-({high:0,medium:1,normal:2}[b.priority]||2);
+  });
   document.getElementById('onetimeList').innerHTML=sorted.map(t=>{
-    const pl=t.priority==='high'?'<span class="pri pri-high">High</span>':t.priority==='medium'?'<span class="pri pri-medium">Medium</span>':'';
-    return `<div class="chore-item one-time ${t.priority==='high'?'priority-high':t.priority==='medium'?'priority-medium':''} ${t.done?'done':''}" onclick="toggleOneTime('${t.id}')"><div class="chore-check ${t.done?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(t.name)} ${pl}</div><div class="chore-meta">One-time · ${t.pts} pts</div></div><div class="pts-badge ${t.done?'earned':''}">${t.done?'✓ ':'+'} ${t.pts}</div></div>`;
+    const pl=t.priority==='high'?'<span class="pri pri-high">High</span>':t.priority==='medium'?'<span class="pri pri-medium">Medium</span>':t.priority==='normal'?'<span class="pri pri-low">Normal</span>':'';
+    const overdue=!t.done&&t.date<today;
+    const when=overdue?`<span style="color:var(--danger);font-weight:600">Overdue · ${fmtDate(t.date)}</span>`:(t.date===today?'Today':fmtDate(t.date));
+    return `<div class="chore-item one-time ${t.priority==='high'?'priority-high':t.priority==='medium'?'priority-medium':''} ${t.done?'done':''} ${overdue?'reminding':''}" onclick="toggleOneTime('${t.id}')"><div class="chore-check ${t.done?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(t.name)} ${pl}</div><div class="chore-meta">${when} · ${fmtPts(t.pts)} pts</div></div><div class="pts-badge ${t.done?'earned':''}">${t.done?'✓ ':'+'} ${fmtPts(t.pts)}</div></div>`;
   }).join('');
 }
 
 // ── TOGGLE CHORE ──
 function toggleChore(id){
   const c=S.chores.find(x=>x.id===id);if(!c)return;
-  const was=!!S.checked[id];
+  const uid=c.userId||activeUserId();
+  const p=prog(uid);if(!p)return;
+  const list=(S.chores||[]).filter(x=>x.userId===uid);
+  const was=!!p.checked[id];
   if(!c.group){
-    S.checked[id]=!was;S.points+=was?-c.pts:c.pts;
-    if(!was){logEntry('chore',c.name,c.pts);if(soundOn())playChime();}
-    else{const h=getTodayHistory();h.entries.push({type:'chore-undo',label:c.name+' (unchecked)',pts:-c.pts,time:fmtTime()});h.dailyEarned=Math.max(0,h.dailyEarned-c.pts);save();}
-    toast(`${was?'−':'+'}${c.pts} pts — ${c.name}`,was?'err':'ok');
+    p.checked[id]=!was;addToBank(was?-c.pts:c.pts,uid);
+    if(!was){logEntry('chore',c.name,c.pts,uid);if(soundOn())playChime();}
+    else{const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:c.name+' (unchecked)',pts:round2(-c.pts),time:fmtTime()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-c.pts));save();}
+    toast(`${was?'−':'+'}${fmtPts(c.pts)} pts — ${c.name}`,was?'err':'ok');
   } else {
-    const wasDone=isGroupDone(c.group);S.checked[id]=!was;const nowDone=isGroupDone(c.group);
-    if(!wasDone&&nowDone){S.points+=groupPts(c.group);logEntry('chore',`Group: ${c.group}`,groupPts(c.group));if(soundOn())playChime();toast(`Group "${c.group}" complete! +${groupPts(c.group)} pts 🎉`,'ok');}
-    else if(wasDone&&!nowDone){const gp=groupPts(c.group);S.points-=gp;const h=getTodayHistory();h.entries.push({type:'chore-undo',label:`Group: ${c.group} (incomplete)`,pts:-gp,time:fmtTime()});h.dailyEarned=Math.max(0,h.dailyEarned-gp);save();toast(`Group incomplete — −${gp} pts`,'err');}
+    const wasDone=isGroupDone(c.group,list,uid);p.checked[id]=!was;const nowDone=isGroupDone(c.group,list,uid);
+    if(!wasDone&&nowDone){const gp=groupPts(c.group,list);addToBank(gp,uid);logEntry('chore',`Group: ${c.group}`,gp,uid);if(soundOn())playChime();toast(`Group "${c.group}" complete! +${fmtPts(gp)} pts 🎉`,'ok');}
+    else if(wasDone&&!nowDone){const gp=groupPts(c.group,list);addToBank(-gp,uid);const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:`Group: ${c.group} (incomplete)`,pts:round2(-gp),time:fmtTime()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-gp));save();toast(`Group incomplete — −${fmtPts(gp)} pts`,'err');}
     else toast(was?'Unchecked':`Checked ✓ — finish all "${c.group}" for pts`,'info');
   }
   save();updateBank();renderDashboard();
 }
 function toggleOneTime(id){
   const t=(S.oneTimeTasks||[]).find(x=>x.id===id);if(!t)return;
+  const uid=t.userId||activeUserId();
   t.done=!t.done;
-  if(t.done){S.points+=t.pts;logEntry('chore',`📌 ${t.name}`,t.pts);if(soundOn())playChime();toast(`+${t.pts} pts — ${t.name}`,'ok');}
-  else{S.points-=t.pts;const h=getTodayHistory();h.entries.push({type:'chore-undo',label:`📌 ${t.name} (unchecked)`,pts:-t.pts,time:fmtTime()});h.dailyEarned=Math.max(0,h.dailyEarned-t.pts);save();toast(`−${t.pts} pts`,'err');}
+  if(t.done){addToBank(t.pts,uid);logEntry('chore',`📌 ${t.name}`,t.pts,uid);if(soundOn())playChime();toast(`+${fmtPts(t.pts)} pts — ${t.name}`,'ok');}
+  else{addToBank(-t.pts,uid);const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:`📌 ${t.name} (unchecked)`,pts:round2(-t.pts),time:fmtTime()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-t.pts));save();toast(`−${fmtPts(t.pts)} pts`,'err');}
   save();updateBank();renderDashboard();
 }
 
 // ── CHORE MANAGEMENT ──
 function addChore(){
-  const name=document.getElementById('cName').value.trim(),pts=parseInt(document.getElementById('cPts').value);
+  const name=document.getElementById('cName').value.trim(),pts=parsePts(document.getElementById('cPts').value,{min:0.01});
   const gs=document.getElementById('cGroupSel').value,gn=document.getElementById('cGroupNew').value.trim();
-  if(!name){toast('Enter chore name','err');return;}if(!pts||pts<1){toast('Enter valid pts','err');return;}
-  S.chores.push({id:uid(),name,pts,group:gn||gs||null});
+  const assignees=getSelectedAssignIds('cAssignUser');
+  if(!name){toast('Enter chore name','err');return;}if(pts==null){toast('Enter valid pts (min 0.01)','err');return;}
+  if(!assignees.length){toast('Select at least one user','err');return;}
+  const group=gn||gs||null;
+  assignees.forEach(assignTo=>{S.chores.push({id:uid(),name,pts,group,userId:assignTo});});
   document.getElementById('cName').value='';document.getElementById('cPts').value='';document.getElementById('cGroupNew').value='';document.getElementById('cGroupSel').value='';
-  logAdmin('chore-add',`Chore added: "${name}"`,`${pts} pts${(gn||gs)?`, group: ${gn||gs}`:''}`);
-  save();renderManage();refreshGroupSelect();toast(`"${name}" added!`,'ok');
+  const who=assignees.map(usernameById).join(', ');
+  logAdmin('chore-add',`Chore added: "${name}"`,`${fmtPts(pts)} pts · ${who}${group?`, group: ${group}`:''}${assignees.length>1?` (${assignees.length} users)`:''}`);
+  save();renderManage();refreshGroupSelect();toast(assignees.length>1?`"${name}" added for ${assignees.length} users!`:`"${name}" added!`,'ok');
 }
 function removeChore(id){
   if(!confirm('Remove this chore?'))return;
   const c=S.chores.find(x=>x.id===id);
-  if(c&&S.checked[id]){if(!c.group)S.points-=c.pts;else if(isGroupDone(c.group))S.points-=groupPts(c.group);}
-  logAdmin('chore-remove',`Chore removed: "${c?c.name:'unknown'}"`,`was ${c?c.pts:0} pts`);
-  delete S.checked[id];S.chores=S.chores.filter(x=>x.id!==id);
+  if(c){
+    const uid=c.userId;
+    const p=ensureProgress(uid);
+    const list=(S.chores||[]).filter(x=>x.userId===uid);
+    if(p&&p.checked[id]){if(!c.group)addToBank(-c.pts,uid);else if(isGroupDone(c.group,list,uid))addToBank(-groupPts(c.group,list),uid);}
+    if(p)delete p.checked[id];
+  }
+  logAdmin('chore-remove',`Chore removed: "${c?c.name:'unknown'}"`,`was ${c?fmtPts(c.pts):0} pts · ${c?usernameById(c.userId):''}`);
+  S.chores=S.chores.filter(x=>x.id!==id);
   save();updateBank();renderManage();refreshGroupSelect();if(activeTab==='dashboard')renderDashboard();toast('Chore removed','info');
 }
-function refreshGroupSelect(){const s=document.getElementById('cGroupSel');if(!s)return;s.innerHTML='<option value="">— No group —</option>';groups().forEach(g=>s.innerHTML+=`<option value="${esc(g)}">${esc(g)}</option>`);}
+function refreshGroupSelect(){const s=document.getElementById('cGroupSel');if(!s)return;s.innerHTML='<option value="">— No group —</option>';groups(S.chores||[]).forEach(g=>s.innerHTML+=`<option value="${esc(g)}">${esc(g)}</option>`);}
 function addOneTimeTask(){
   const name=document.getElementById('otName').value.trim(),date=document.getElementById('otDate').value;
-  const pts=parseInt(document.getElementById('otPts').value)||0,pri=document.getElementById('otPriority').value;
+  const ptsRaw=document.getElementById('otPts').value;
+  const pts=ptsRaw===''||ptsRaw==null?0:parsePts(ptsRaw,{min:0,allowZero:true});
+  const pri=document.getElementById('otPriority').value;
+  const assignees=getSelectedAssignIds('otAssignUser');
   if(!name){toast('Enter task name','err');return;}if(!date){toast('Select a date','err');return;}
+  if(pts==null){toast('Enter valid pts','err');return;}
+  if(!assignees.length){toast('Select at least one user','err');return;}
   if(!S.oneTimeTasks)S.oneTimeTasks=[];
-  S.oneTimeTasks.push({id:uid(),name,date,pts,priority:pri,done:false});
+  assignees.forEach(assignTo=>{S.oneTimeTasks.push({id:uid(),name,date,pts,priority:pri,done:false,userId:assignTo});});
   document.getElementById('otName').value='';document.getElementById('otDate').value='';document.getElementById('otPts').value='';
-  logAdmin('onetime-add',`One-time task added: "${name}"`,`date: ${fmtDate(date)}, ${pts} pts, priority: ${pri}`);
-  save();renderManage();toast(`Task added for ${fmtDate(date)}`,'ok');
+  const who=assignees.map(usernameById).join(', ');
+  logAdmin('onetime-add',`One-time task added: "${name}"`,`date: ${fmtDate(date)}, ${fmtPts(pts)} pts, ${who}, priority: ${pri}${assignees.length>1?` (${assignees.length} users)`:''}`);
+  save();renderManage();toast(assignees.length>1?`Task added for ${assignees.length} users`:`Task added for ${fmtDate(date)}`,'ok');
 }
 function removeOneTimeTask(id){if(!confirm('Remove?'))return;const t=(S.oneTimeTasks||[]).find(x=>x.id===id);logAdmin('onetime-remove',`One-time task removed: "${t?t.name:'unknown'}"`,t?`was for ${fmtDate(t.date)}`:'');S.oneTimeTasks=(S.oneTimeTasks||[]).filter(x=>x.id!==id);save();renderManage();toast('Task removed','info');}
 
@@ -899,12 +1373,24 @@ function addReward(){
   const redeemType=document.getElementById('rRedeemType').value||'persistent';
   if(!name){toast('Enter reward name','err');return;}
   let r={id:uid(),name,type:type||'standard',redeemType,cost:0,timesUsed:0};
-  if(type==='timer'){const p=parseFloat(document.getElementById('rTimerPts').value),h=parseFloat(document.getElementById('rTimerHours').value);if(!p||p<=0){toast('Enter pts','err');return;}if(!h||h<=0){toast('Enter hours','err');return;}r.timerPts=p;r.timerHours=h;}
-  else{const c=parseInt(document.getElementById('rCost').value);if(!c||c<1){toast('Enter pts','err');return;}r.cost=c;}
-  S.rewards.push(r);
+  if(type==='timer'){
+    const p=parsePts(document.getElementById('rTimerPts').value,{min:0.01}),h=parseFloat(document.getElementById('rTimerHours').value);
+    if(p==null){toast('Enter pts','err');return;}if(!h||h<=0){toast('Enter hours','err');return;}
+    r.timerPts=p;r.timerHours=h;
+  } else {
+    const c=parsePts(document.getElementById('rCost').value,{min:0.01});
+    if(c==null){toast('Enter pts','err');return;}r.cost=c;
+  }
+  const assignees=getSelectedAssignIds('rAssignUser');
+  if(!assignees.length){toast('Select at least one user','err');return;}
+  assignees.forEach(assignTo=>{
+    const copy={...r,id:uid(),userId:assignTo};
+    S.rewards.push(copy);
+  });
   document.getElementById('rName').value='';document.getElementById('rCost').value='';document.getElementById('rTimerPts').value='';document.getElementById('rTimerHours').value='';document.getElementById('rType').value='standard';document.getElementById('rRedeemType').value='persistent';onRewardTypeChange();
-  logAdmin('reward-add',`Reward added: "${name}"`,`type: ${type}, redemption: ${redeemType}, ${type==='timer'?`${r.timerPts}pts/${r.timerHours}hr`:r.cost+' pts'}`);
-  save();renderRewards();renderManage();toast(`"${name}" added! (${redeemType})`,'ok');
+  const who=assignees.map(usernameById).join(', ');
+  logAdmin('reward-add',`Reward added: "${name}"`,`type: ${type}, redemption: ${redeemType}, ${who}, ${type==='timer'?`${fmtPts(r.timerPts)}pts/${r.timerHours}hr`:fmtPts(r.cost)+' pts'}${assignees.length>1?` (${assignees.length} users)`:''}`);
+  save();renderRewards();renderManage();toast(assignees.length>1?`"${name}" added for ${assignees.length} users!`:`"${name}" added! (${redeemType})`,'ok');
 }
 function removeReward(id){
   if(!confirm('Remove?'))return;
@@ -913,32 +1399,40 @@ function removeReward(id){
   logAdmin('reward-remove',`Reward removed: "${r?r.name:'unknown'}"`,r?`was ${r.type==='timer'?r.timerPts+'pts/'+r.timerHours+'hr':r.cost+' pts'}, ${r.redeemType||'persistent'}, used ${r.timesUsed||0}×`:'');
   S.rewards=S.rewards.filter(x=>x.id!==id);save();renderRewards();renderManage();toast('Removed','info');
 }
-function saveTimerRate(id){const r=S.rewards.find(x=>x.id===id);if(!r)return;const p=parseFloat(document.getElementById('tpts-'+id).value),h=parseFloat(document.getElementById('thrs-'+id).value);if(!p||p<=0||!h||h<=0){toast('Invalid values','err');return;}logAdmin('reward-edit',`Timer rate updated: "${r.name}"`,`${r.timerPts}pts/${r.timerHours}hr → ${p}pts/${h}hr`);r.timerPts=p;r.timerHours=h;save();renderRewards();toast('Rate updated!','ok');}
-function getPendingChores(){const r=[];S.chores.filter(c=>!c.group&&!S.checked[c.id]).forEach(c=>r.push({name:c.name,pts:c.pts}));groups().forEach(g=>{if(!isGroupDone(g)){const rem=groupChores(g).filter(c=>!S.checked[c.id]).length;r.push({name:`${g} (group — ${rem} left)`,pts:groupPts(g)});}});return r;}
-function insufficientHTML(needed){const s=[...getPendingChores()].sort((a,b)=>b.pts-a.pts);const sg=[];let run=0;for(const c of s){if(run>=needed)break;sg.push(c);run+=c.pts;}const rows=sg.map(c=>`<div class="insuf-chore"><span>${esc(c.name)}</span><span class="insuf-chore-pts">+${c.pts}</span></div>`).join('');return `<div class="insuf-card"><div class="insuf-title">😬 Not enough points!</div><div class="insuf-gap">Need <strong>${needed} more</strong> — complete these:</div><div class="insuf-chore-list">${rows||'<div style="font-size:13px;color:var(--text-muted)">No pending chores</div>'}</div></div>`;}
+function saveTimerRate(id){const r=S.rewards.find(x=>x.id===id);if(!r)return;const p=parsePts(document.getElementById('tpts-'+id).value,{min:0.01}),h=parseFloat(document.getElementById('thrs-'+id).value);if(p==null||!h||h<=0){toast('Invalid values','err');return;}logAdmin('reward-edit',`Timer rate updated: "${r.name}"`,`${fmtPts(r.timerPts)}pts/${r.timerHours}hr → ${fmtPts(p)}pts/${h}hr`);r.timerPts=p;r.timerHours=h;save();renderRewards();toast('Rate updated!','ok');}
+function getPendingChores(){
+  const chores=myChores(),p=prog();if(!p)return [];
+  const r=[];
+  chores.filter(c=>!c.group&&!p.checked[c.id]).forEach(c=>r.push({name:c.name,pts:c.pts}));
+  groups(chores).forEach(g=>{if(!isGroupDone(g,chores)){const rem=groupChores(g,chores).filter(c=>!p.checked[c.id]).length;r.push({name:`${g} (group — ${rem} left)`,pts:groupPts(g,chores)});}});
+  return r;
+}
+function insufficientHTML(needed){needed=round2(needed);const s=[...getPendingChores()].sort((a,b)=>b.pts-a.pts);const sg=[];let run=0;for(const c of s){if(run>=needed)break;sg.push(c);run=round2(run+c.pts);}const rows=sg.map(c=>`<div class="insuf-chore"><span>${esc(c.name)}</span><span class="insuf-chore-pts">+${fmtPts(c.pts)}</span></div>`).join('');return `<div class="insuf-card"><div class="insuf-title">😬 Not enough points!</div><div class="insuf-gap">Need <strong>${fmtPts(needed)} more</strong> — complete these:</div><div class="insuf-chore-list">${rows||'<div style="font-size:13px;color:var(--text-muted)">No pending chores</div>'}</div></div>`;}
 function redeemReward(id){
   const r=S.rewards.find(x=>x.id===id);if(!r)return;
+  const uid=r.userId||activeUserId();
+  const p=prog(uid);if(!p){toast('Select a user first','err');return;}
   if(r.type==='timer'){startTimerSession(id);return;}
-  const gap=r.cost-S.points;
+  const gap=round2(r.cost-p.points);
   if(gap>0){const el=document.getElementById('insuf-'+id);if(el){const open=el.style.display!=='none';el.innerHTML=open?'':insufficientHTML(gap);el.style.display=open?'none':'';}return;}
-  if(!confirm(`Use "${r.name}" for ${r.cost} pts?`))return;
-  S.points-=r.cost;
+  if(!confirm(`Use "${r.name}" for ${fmtPts(r.cost)} pts?`))return;
+  addToBank(-r.cost,uid);
   r.timesUsed=(r.timesUsed||0)+1;
   r.lastUsed=todayStr();
-  // Log with reward name and type
-  logEntry('reward',r.name,-r.cost);
-  // One-time: remove after use
+  logEntry('reward',r.name,-r.cost,uid);
   if(r.redeemType==='onetime'){
     S.rewards=S.rewards.filter(x=>x.id!==id);
     if(tvSession.active&&tvSession.rewardId===id){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
   }
   save();updateBank();renderRewards();if(soundOn())playChime();
-  toast(S.points<0?'Redeemed — balance negative!':`${r.redeemType==='onetime'?'🎉 One-time reward used!':'🎉 Enjoyed '+r.name+'!'}`,'ok');
+  toast(p.points<0?'Redeemed — balance negative!':`${r.redeemType==='onetime'?'🎉 One-time reward used!':'🎉 Enjoyed '+r.name+'!'}`,'ok');
 }
 function startTimerSession(id){
   if(tvSession.active){toast('A timer is already running','warn');return;}
   const r=S.rewards.find(x=>x.id===id);if(!r)return;
-  if(S.points<=0&&!confirm(`Bank is ${S.points}pts — continue?`))return;
+  const uid=r.userId||activeUserId();
+  const p=prog(uid);if(!p){toast('Select a user first','err');return;}
+  if(p.points<=0&&!confirm(`Bank is ${fmtPts(p.points)} pts — continue?`))return;
   tvSession={active:true,rewardId:id,startTime:Date.now(),intervalId:setInterval(renderTvTimer,1000)};
   renderTvTimer();renderRewards();toast(`⏱ "${r.name}" started!`,'info');
   document.getElementById('tvTimerSection').scrollIntoView({behavior:'smooth',block:'start'});
@@ -946,34 +1440,38 @@ function startTimerSession(id){
 function stopTimerSession(){
   if(!tvSession.active)return;clearInterval(tvSession.intervalId);
   const r=S.rewards.find(x=>x.id===tvSession.rewardId),elapsed=(Date.now()-tvSession.startTime)/1000;
-  const pps=r?(r.timerPts/(r.timerHours*3600)):(10/3600),pd=Math.ceil(elapsed*pps);
+  const uid=r?(r.userId||activeUserId()):activeUserId();
+  const pps=r?(r.timerPts/(r.timerHours*3600)):(10/3600),pd=round2(Math.ceil(elapsed*pps*100)/100);
   const ts=Math.floor(elapsed/60)>0?`${Math.floor(elapsed/60)}m ${Math.floor(elapsed%60)}s`:`${Math.floor(elapsed)}s`;
-  if(pd>0){S.points-=pd;logEntry('reward',`⏱ ${r?r.name:'Timer'} — ${ts}`,-pd);}
+  if(pd>0){addToBank(-pd,uid);logEntry('reward',`⏱ ${r?r.name:'Timer'} — ${ts}`,-pd,uid);}
   if(r){r.timesUsed=(r.timesUsed||0)+1;r.lastUsed=todayStr();}
   const wasOneTime=r?.redeemType==='onetime';
   const rewardId=tvSession.rewardId;
   tvSession={active:false,rewardId:null,startTime:null,intervalId:null};
   if(wasOneTime) S.rewards=S.rewards.filter(x=>x.id!==rewardId);
-  save();updateBank();renderTvTimer();renderRewards();toast(`⏹ ${ts} — ${pd>0?pd+' pts deducted':'no pts'}${wasOneTime?' · one-time reward used':''}`,pd>0?'warn':'ok');
+  save();updateBank();renderTvTimer();renderRewards();toast(`⏹ ${ts} — ${pd>0?fmtPts(pd)+' pts deducted':'no pts'}${wasOneTime?' · one-time reward used':''}`,pd>0?'warn':'ok');
 }
 function cancelTimerSession(){if(!tvSession.active)return;if(!confirm('Cancel? No pts deducted.'))return;clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};renderTvTimer();renderRewards();toast('Cancelled','info');}
 function fmtElapsed(ms){const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60;if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
-function renderTvTimer(){const el=document.getElementById('tvTimerSection');if(!el)return;if(!tvSession.active){el.innerHTML='';return;}const elapsed=Date.now()-tvSession.startTime,r=S.rewards.find(x=>x.id===tvSession.rewardId),pps=r?(r.timerPts/(r.timerHours*3600)):(10/3600),pu=(elapsed/1000)*pps;el.innerHTML=`<div class="tv-card"><div class="tv-card-label">⏱ Running — ${esc(r?r.name:'Timer')}</div><div class="tv-timer-display">${fmtElapsed(elapsed)}</div><div class="tv-pts-rate">Using <strong>${pu.toFixed(1)} pts</strong> · ${r?r.timerPts+' pts/'+r.timerHours+'hr':'—'}</div><div class="tv-controls"><button class="tv-btn tv-btn-stop" onclick="stopTimerSession()">⏹ Stop & Save</button><button class="tv-btn tv-btn-cancel" onclick="cancelTimerSession()">✕ Cancel</button></div><div class="tv-session-info">Rounded up to nearest whole point</div></div>`;}
-function renderRewardMode(){const n=document.getElementById('rewardsLockedNotice'),f=document.getElementById('rewardsAddForm');if(n)n.style.display=parentUnlocked?'none':'';if(f)f.style.display=parentUnlocked?'':'none';renderRewards();renderTvTimer();}
+function renderTvTimer(){const el=document.getElementById('tvTimerSection');if(!el)return;if(!tvSession.active){el.innerHTML='';return;}const elapsed=Date.now()-tvSession.startTime,r=S.rewards.find(x=>x.id===tvSession.rewardId),pps=r?(r.timerPts/(r.timerHours*3600)):(10/3600),pu=(elapsed/1000)*pps;el.innerHTML=`<div class="tv-card"><div class="tv-card-label">⏱ Running — ${esc(r?r.name:'Timer')}</div><div class="tv-timer-display">${fmtElapsed(elapsed)}</div><div class="tv-pts-rate">Using <strong>${pu.toFixed(2)} pts</strong> · ${r?fmtPts(r.timerPts)+' pts/'+r.timerHours+'hr':'—'}</div><div class="tv-controls"><button class="tv-btn tv-btn-stop" onclick="stopTimerSession()">⏹ Stop & Save</button><button class="tv-btn tv-btn-cancel" onclick="cancelTimerSession()">✕ Cancel</button></div><div class="tv-session-info">Rounded up to 2 decimal places</div></div>`;}
+function renderRewardMode(){const n=document.getElementById('rewardsLockedNotice'),f=document.getElementById('rewardsAddForm');const m=canManage();if(n)n.style.display=m?'none':'';if(f)f.style.display=m?'':'none';renderRewards();renderTvTimer();}
 function renderRewards(){
   const list=document.getElementById('rewardList');if(!list)return;
-  if(!S.rewards.length){list.innerHTML=`<div class="empty"><div class="empty-icon">🎁</div>${parentUnlocked?'No rewards yet':'No rewards added yet'}</div>`;return;}
-  list.innerHTML=S.rewards.map((r,i)=>{
-    const isT=r.type==='timer',canA=isT||S.points>=r.cost,isR=tvSession.active&&tvSession.rewardId===r.id;
+  if(!hasActiveView()){list.innerHTML=emptyViewHTML('rewards');return;}
+  const rewards=myRewards();
+  const p=prog();
+  if(!rewards.length){list.innerHTML=`<div class="empty"><div class="empty-icon">🎁</div>${canManage()?'No rewards yet':'No rewards added yet'}</div>`;return;}
+  list.innerHTML=rewards.map((r,i)=>{
+    const isT=r.type==='timer',canA=isT||p.points>=r.cost,isR=tvSession.active&&tvSession.rewardId===r.id;
     const isPersistent=!r.redeemType||r.redeemType==='persistent';
-    const rs=isT?`${r.timerPts} pts/${r.timerHours}hr`:'';
+    const rs=isT?`${fmtPts(r.timerPts)} pts/${r.timerHours}hr`:'';
     const usedCount=r.timesUsed||0;
     let act='';
-    if(parentUnlocked)act=isT?`<button class="btn btn-sm" style="background:#1a1a2e;color:#e94560;border-color:#e94560" onclick="startTimerSession('${r.id}')" ${isR?'disabled':''}>⏱ ${isR?'Running':'Start'}</button><button class="btn btn-danger btn-sm btn-icon" onclick="removeReward('${r.id}')">✕</button>`:`<button class="btn btn-success btn-sm" onclick="redeemReward('${r.id}')">✓ Use</button><button class="btn btn-danger btn-sm btn-icon" onclick="removeReward('${r.id}')">✕</button>`;
-    else act=isT?`<button class="btn btn-sm" style="background:#1a1a2e;color:#e94560;border-color:#e94560" onclick="startTimerSession('${r.id}')" ${isR?'disabled':''}>⏱ ${isR?'Running':'Start'}</button>`:canA?`<button class="btn btn-success btn-sm" onclick="redeemReward('${r.id}')">✓ Use it!</button>`:`<button class="btn btn-warning btn-sm" onclick="redeemReward('${r.id}')">😬 ${r.cost-S.points} pts short</button>`;
-    const re=(isT&&parentUnlocked)?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text-muted);font-weight:600">Rate:</span><input type="number" id="tpts-${r.id}" value="${r.timerPts}" min="1" style="width:54px;padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)"><span style="font-size:11px;color:var(--text-muted)">pts per</span><input type="number" id="thrs-${r.id}" value="${r.timerHours}" min="0.25" step="0.25" style="width:54px;padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)"><span style="font-size:11px;color:var(--text-muted)">hr</span><button class="btn btn-sm btn-primary" style="padding:4px 10px;font-size:11px" onclick="saveTimerRate('${r.id}')">Save</button></div>`:'';
+    if(canManage())act=isT?`<button class="btn btn-sm" style="background:#1a1a2e;color:#e94560;border-color:#e94560" onclick="startTimerSession('${r.id}')" ${isR?'disabled':''}>⏱ ${isR?'Running':'Start'}</button><button class="btn btn-danger btn-sm btn-icon" onclick="removeReward('${r.id}')">✕</button>`:`<button class="btn btn-success btn-sm" onclick="redeemReward('${r.id}')">✓ Use</button><button class="btn btn-danger btn-sm btn-icon" onclick="removeReward('${r.id}')">✕</button>`;
+    else act=isT?`<button class="btn btn-sm" style="background:#1a1a2e;color:#e94560;border-color:#e94560" onclick="startTimerSession('${r.id}')" ${isR?'disabled':''}>⏱ ${isR?'Running':'Start'}</button>`:canA?`<button class="btn btn-success btn-sm" onclick="redeemReward('${r.id}')">✓ Use it!</button>`:`<button class="btn btn-warning btn-sm" onclick="redeemReward('${r.id}')">😬 ${fmtPts(round2(r.cost-p.points))} pts short</button>`;
+    const re=(isT&&canManage())?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text-muted);font-weight:600">Rate:</span><input type="number" id="tpts-${r.id}" value="${r.timerPts}" min="0.01" step="0.01" style="width:54px;padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)"><span style="font-size:11px;color:var(--text-muted)">pts per</span><input type="number" id="thrs-${r.id}" value="${r.timerHours}" min="0.25" step="0.25" style="width:54px;padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)"><span style="font-size:11px;color:var(--text-muted)">hr</span><button class="btn btn-sm btn-primary" style="padding:4px 10px;font-size:11px" onclick="saveTimerRate('${r.id}')">Save</button></div>`:'';
     // type badges row
-    const typeBadge=isT?`<span class="reward-type-badge rtb-timer">⏱ ${rs}</span>${isR?' <span style="font-size:11px;color:#e94560;font-weight:700">● LIVE</span>':''}`:`${r.cost} pts`;
+    const typeBadge=isT?`<span class="reward-type-badge rtb-timer">⏱ ${rs}</span>${isR?' <span style="font-size:11px;color:#e94560;font-weight:700">● LIVE</span>':''}`:`${fmtPts(r.cost)} pts`;
     const redeemBadge=isPersistent?'<span class="reward-type-badge rtb-persistent">♻️ Persistent</span>':'<span class="reward-type-badge rtb-onetime">1️⃣ One-time</span>';
     const usedLine=usedCount>0?`<div class="reward-used-count">Used ${usedCount} time${usedCount!==1?'s':''}${r.lastUsed?' · last '+fmtDate(r.lastUsed):''}</div>`:'';
     return `<div class="reward-item" style="${isR?'border-color:#e94560;background:#fff8f8':''}">
@@ -1002,28 +1500,35 @@ const ADMIN_LABEL={'chore-add':'Chore added','chore-edit':'Chore edited','chore-
 
 function renderHistory(){
   const el=document.getElementById('historyList');if(!el)return;
+  if(!hasActiveView()){
+    el.innerHTML=emptyViewHTML('history');
+    const sub=document.getElementById('historySub');
+    if(sub) sub.textContent=isAdmin()?'Select a user to view their history':'';
+    return;
+  }
   const histFilter=document.getElementById('historyFilter');
   let filter=histFilter?.value||'all';
   // Never allow admin-only filter while locked
-  if(filter==='admin'&&!parentUnlocked){
+  if(filter==='admin'&&!canManage()){
     filter='all';
     if(histFilter) histFilter.value='all';
   }
   const adminNote=document.getElementById('adminHistoryNote');
-  if(adminNote)adminNote.style.display=parentUnlocked?'':'none';
+  if(adminNote)adminNote.style.display=canManage()?'':'none';
   const adminOpt=document.getElementById('historyFilterAdmin');
-  if(adminOpt)adminOpt.style.display=parentUnlocked?'':'none';
+  if(adminOpt)adminOpt.style.display=canManage()?'':'none';
 
   // Build a combined day-keyed map
   const dayMap={};
-  // Activity entries
-  (S.history||[]).forEach(day=>{
+  // Activity entries (active user's progress)
+  const userHist=(prog()&&prog().history)||[];
+  userHist.forEach(day=>{
     if(!dayMap[day.date])dayMap[day.date]={date:day.date,entries:[],adminEntries:[],dailyEarned:day.dailyEarned,dailySpent:day.dailySpent,penalty:day.penalty||0};
     else{dayMap[day.date].dailyEarned=day.dailyEarned;dayMap[day.date].dailySpent=day.dailySpent;dayMap[day.date].penalty=day.penalty||0;}
     (day.entries||[]).forEach(e=>dayMap[day.date].entries.push(e));
   });
-  // Admin log entries — only when parent PIN unlocked
-  if(parentUnlocked){
+  // Admin log entries — only when Manage unlocked (PIN or Admin)
+  if(canManage()){
     (S.adminLog||[]).forEach(e=>{
       if(!dayMap[e.date])dayMap[e.date]={date:e.date,entries:[],adminEntries:[],dailyEarned:0,dailySpent:0,penalty:0};
       dayMap[e.date].adminEntries.push(e);
@@ -1036,7 +1541,7 @@ function renderHistory(){
   const filtered=days.map(day=>{
     let entries=day.entries.slice();
     // Always empty admin list when locked (defense in depth)
-    let adminEntries=parentUnlocked?day.adminEntries.slice():[];
+    let adminEntries=canManage()?day.adminEntries.slice():[];
     if(filter==='chore') entries=entries.filter(e=>e.type==='chore'||e.type==='chore-undo');
     else if(filter==='reward') entries=entries.filter(e=>e.type==='reward');
     else if(filter==='penalty') entries=entries.filter(e=>e.type==='penalty');
@@ -1053,20 +1558,20 @@ function renderHistory(){
   }
 
   el.innerHTML=filtered.map((day,di)=>{
-    const net=day.dailyEarned-day.dailySpent-day.penalty;
+    const net=round2(day.dailyEarned-day.dailySpent-day.penalty);
     // Rewards summary
     const rewardEntries=day.entries.filter(e=>e.type==='reward');
     let rewardsSummary='';
     if(rewardEntries.length&&filter!=='chore'&&filter!=='penalty'&&filter!=='admin'){
-      const totalSpent=rewardEntries.reduce((s,e)=>s+Math.abs(e.pts),0);
-      const rows=rewardEntries.map(e=>`<div class="history-reward-row"><span class="history-reward-name">🎁 ${esc(e.label)}</span><span class="history-reward-pts">−${Math.abs(e.pts)} pts</span></div>`).join('');
-      rewardsSummary=`<div class="history-rewards-summary"><div class="history-rewards-title">🎁 ${rewardEntries.length} reward${rewardEntries.length!==1?'s':''} claimed · ${totalSpent} pts spent</div>${rows}</div>`;
+      const totalSpent=round2(rewardEntries.reduce((s,e)=>s+Math.abs(e.pts),0));
+      const rows=rewardEntries.map(e=>`<div class="history-reward-row"><span class="history-reward-name">🎁 ${esc(e.label)}</span><span class="history-reward-pts">−${fmtPts(Math.abs(e.pts))} pts</span></div>`).join('');
+      rewardsSummary=`<div class="history-rewards-summary"><div class="history-rewards-title">🎁 ${rewardEntries.length} reward${rewardEntries.length!==1?'s':''} claimed · ${fmtPts(totalSpent)} pts spent</div>${rows}</div>`;
     }
     // Activity entries HTML
     const actHTML=day.entries.map(e=>`<div class="history-entry">
       <div class="history-entry-icon ${TYPE_CSS[e.type]||'hi-chore'}">${TYPE_ICON[e.type]||'•'}</div>
       <div class="history-entry-body"><div class="history-entry-name">${esc(e.label)}</div><div class="history-entry-time">${e.time} · ${TYPE_LABEL[e.type]||e.type}</div></div>
-      <div class="history-entry-pts ${e.pts>=0?'pos':'neg'}">${e.pts!==0?(e.pts>=0?'+':'')+e.pts+' pts':''}</div>
+      <div class="history-entry-pts ${e.pts>=0?'pos':'neg'}">${e.pts!==0?(e.pts>=0?'+':'')+fmtPts(e.pts)+' pts':''}</div>
     </div>`).join('');
     // Admin entries HTML
     const admHTML=day.adminEntries.map(e=>`<div class="history-entry admin-entry">
@@ -1082,10 +1587,10 @@ function renderHistory(){
       <div class="history-day-hd" onclick="toggleHDay(${di})">
         <div>
           <div class="history-day-title">${fmtDate(day.date)}</div>
-          <div class="history-day-summary">Earned ${day.dailyEarned} · Spent ${day.dailySpent}${day.penalty?` · Penalty ${day.penalty}`:''}${rewardEntries.length?` · ${rewardEntries.length} reward${rewardEntries.length!==1?'s':''} claimed`:''}</div>
-          ${adminCount>0&&parentUnlocked?`<div class="history-day-admin-count">🔓 ${adminCount} admin action${adminCount!==1?'s':''}</div>`:''}
+          <div class="history-day-summary">Earned ${fmtPts(day.dailyEarned)} · Spent ${fmtPts(day.dailySpent)}${day.penalty?` · Penalty ${fmtPts(day.penalty)}`:''}${rewardEntries.length?` · ${rewardEntries.length} reward${rewardEntries.length!==1?'s':''} claimed`:''}</div>
+          ${adminCount>0&&canManage()?`<div class="history-day-admin-count">🔓 ${adminCount} admin action${adminCount!==1?'s':''}</div>`:''}
         </div>
-        <div class="history-day-pts ${net>=0?'pos':'neg'}">${net>=0?'+':''}${net} pts</div>
+        <div class="history-day-pts ${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmtPts(net)} pts</div>
       </div>
       <div class="history-entries ${di===0?'open':''}" id="hday-${di}">
         ${rewardsSummary}
@@ -1156,8 +1661,8 @@ function renderTaskCalDash(){const sec=document.getElementById('taskCalDashSecti
 function calFeedListHTML(feeds,canRemove){if(!feeds.length)return'<div class="empty" style="padding:1rem">No feeds yet — add an iCal URL above</div>';return feeds.map(f=>`<div class="cal-feed-item"><div class="cal-dot" style="background:${f.color};width:12px;height:12px;border-radius:50%;flex-shrink:0"></div><div class="cal-feed-body"><div class="cal-feed-name">${esc(f.name)}</div><div class="cal-feed-url">${esc(f.url)}</div></div>${canRemove?`<button class="btn btn-danger btn-sm btn-icon" onclick="removeCalFeed('${f.id}')">✕</button>`:''}</div>`).join('');}
 function renderCalendarTab(){
   const feeds=userCalFeeds();
-  const cf=document.getElementById('calFeedForm');if(cf)cf.style.display=parentUnlocked?'':'none';
-  const fl=document.getElementById('calFeedList');if(fl)fl.innerHTML=calFeedListHTML(feeds,parentUnlocked);
+  const cf=document.getElementById('calFeedForm');if(cf)cf.style.display=canManage()?'':'none';
+  const fl=document.getElementById('calFeedList');if(fl)fl.innerHTML=calFeedListHTML(feeds,canManage());
   const ev=getTodayEvents(),el=document.getElementById('calEventList');
   if(el)el.innerHTML=ev.length?calEventHTML(ev):'<div class="empty"><div class="empty-icon">📅</div>No events today</div>';
 }
@@ -1230,7 +1735,7 @@ function renderTaskList(){
         <div class="edit-panel">
           <div class="edit-panel-row">
             <div style="flex:1;min-width:140px"><div class="edit-panel-label">Task name</div><input type="text" id="te-name-${t.id}" value="${esc(t.name)}" style="width:100%"></div>
-            <div style="flex:1;min-width:100px"><div class="edit-panel-label">Priority</div><select id="te-pri-${t.id}" style="width:100%"><option value="high" ${t.priority==='high'?'selected':''}>🔴 High</option><option value="medium" ${t.priority==='medium'?'selected':''}>Medium</option><option value="low" ${t.priority==='low'?'selected':''}>🟢 Low</option></select></div>
+            <div style="flex:1;min-width:100px"><div class="edit-panel-label">Priority</div><select id="te-pri-${t.id}" style="width:100%"><option value="high" ${t.priority==='high'?'selected':''}>🔴 High</option><option value="medium" ${t.priority==='medium'?'selected':''}>🟡 Medium</option><option value="low" ${t.priority==='low'?'selected':''}>🟢 Low</option></select></div>
           </div>
           <div class="edit-panel-row"><div style="flex:1"><div class="edit-panel-label">Description</div><input type="text" id="te-desc-${t.id}" value="${esc(t.desc||'')}" style="width:100%"></div></div>
           <div class="edit-panel-row">
@@ -1259,14 +1764,14 @@ function checkReminders(){
       if(soundOn())playAlarm();
       // Log reminder notification
       const dueStr=t.eta?' (due '+fmtDate(t.eta)+')':'';
-      logEntry('reminder','🔔 '+(ov?'Overdue':'Reminder')+': '+t.name+dueStr,0);
+      logEntry('reminder','🔔 '+(ov?'Overdue':'Reminder')+': '+t.name+dueStr,0,t.userId);
     }
   });
   // Check for overdue tasks at start of day
   myTasks().filter(t=>t.status==='pending'&&t.eta&&t.eta<today).forEach(t=>{
     if(!t._overdueLoggedDate||t._overdueLoggedDate!==today){
       t._overdueLoggedDate=today;
-      logEntry('reminder-missed',`⚠️ Overdue: ${t.name} (was due ${fmtDate(t.eta)})`,0);
+      logEntry('reminder-missed',`⚠️ Overdue: ${t.name} (was due ${fmtDate(t.eta)})`,0,t.userId);
     }
   });
 }
@@ -1276,21 +1781,37 @@ function checkAlarms(){const now=new Date(),hm=`${String(now.getHours()).padStar
 
 // ── MANAGE ──
 function renderManage(){
+  fillAssignSelects();
   const cl=document.getElementById('manageChoreList');
   cl.innerHTML=!S.chores.length?'<div class="empty" style="padding:1.5rem"><div class="empty-icon">📋</div>No chores yet</div>':
-    S.chores.map(c=>`<div class="manage-item" id="chore-row-${c.id}"><div class="manage-item-body"><div class="manage-item-name">${esc(c.name)}</div><div class="manage-item-meta">${c.pts} pts · ${c.group?`<span class="tag tag-group">${esc(c.group)}</span>`:'<span class="tag tag-solo">individual</span>'}</div></div><div class="manage-item-actions"><button class="btn btn-sm" onclick="toggleEditChore('${c.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="removeChore('${c.id}')">Remove</button></div></div>
-<div class="edit-panel" id="chore-edit-${c.id}" style="display:none"><div class="edit-panel-row"><div style="flex:1;min-width:140px"><div class="edit-panel-label">Name</div><input type="text" id="ce-name-${c.id}" value="${esc(c.name)}" style="width:100%"></div><div style="width:72px"><div class="edit-panel-label">Points</div><input type="number" id="ce-pts-${c.id}" value="${c.pts}" min="1" style="width:100%"></div></div><div class="edit-panel-row"><div style="flex:1"><div class="edit-panel-label">Group (blank = individual)</div><input type="text" id="ce-group-${c.id}" value="${esc(c.group||'')}" style="width:100%"></div></div><div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveChore('${c.id}')">✓ Save</button><button class="btn btn-ghost btn-sm" onclick="toggleEditChore('${c.id}')">Cancel</button></div></div>`).join('');
+    S.chores.map(c=>`<div class="manage-item" id="chore-row-${c.id}"><div class="manage-item-body"><div class="manage-item-name">${esc(c.name)}</div><div class="manage-item-meta">${fmtPts(c.pts)} pts · ${assigneeBadge(c.userId)} · ${c.group?`<span class="tag tag-group">${esc(c.group)}</span>`:'<span class="tag tag-solo">individual</span>'}</div></div><div class="manage-item-actions"><button class="btn btn-sm" onclick="toggleEditChore('${c.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="removeChore('${c.id}')">Remove</button></div></div>
+<div class="edit-panel" id="chore-edit-${c.id}" style="display:none"><div class="edit-panel-row"><div style="flex:1;min-width:140px"><div class="edit-panel-label">Name</div><input type="text" id="ce-name-${c.id}" value="${esc(c.name)}" style="width:100%"></div><div style="width:72px"><div class="edit-panel-label">Points</div><input type="number" id="ce-pts-${c.id}" value="${c.pts}" min="0.01" step="0.01" style="width:100%"></div></div><div class="edit-panel-row"><div style="flex:1"><div class="edit-panel-label">Group (blank = individual)</div><input type="text" id="ce-group-${c.id}" value="${esc(c.group||'')}" style="width:100%"></div><div style="flex:1;min-width:120px"><div class="edit-panel-label">Assign to</div><select id="ce-user-${c.id}" style="width:100%">${assignOptionsHTML(c.userId)}</select></div></div><div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveChore('${c.id}')">✓ Save</button><button class="btn btn-ghost btn-sm" onclick="toggleEditChore('${c.id}')">Cancel</button></div></div>`).join('');
   const ol=document.getElementById('manageOnetimeList');
   const ots=S.oneTimeTasks||[];
   ol.innerHTML=!ots.length?'<div class="empty" style="padding:1.5rem"><div class="empty-icon">📌</div>No one-time tasks</div>':
-    ots.map(t=>`<div class="manage-item"><div class="manage-item-body"><div class="manage-item-name">${esc(t.name)}</div><div class="manage-item-meta">${fmtDate(t.date)} · ${t.pts} pts · <span class="pri ${t.priority==='high'?'pri-high':t.priority==='medium'?'pri-medium':'pri-low'}">${t.priority}</span>${t.done?' · ✅ Done':''}</div></div><div class="manage-item-actions"><button class="btn btn-danger btn-sm" onclick="removeOneTimeTask('${t.id}')">Remove</button></div></div>`).join('');
+    ots.map(t=>`<div class="manage-item"><div class="manage-item-body"><div class="manage-item-name">${esc(t.name)}</div><div class="manage-item-meta">${fmtDate(t.date)} · ${fmtPts(t.pts)} pts · ${assigneeBadge(t.userId)} · <span class="pri ${t.priority==='high'?'pri-high':t.priority==='medium'?'pri-medium':'pri-low'}">${t.priority}</span>${t.done?' · ✅ Done':''}</div></div><div class="manage-item-actions"><button class="btn btn-danger btn-sm" onclick="removeOneTimeTask('${t.id}')">Remove</button></div></div>`).join('');
   const rl=document.getElementById('manageRewardList');
   rl.innerHTML=!S.rewards.length?'<div class="empty" style="padding:1.5rem"><div class="empty-icon">🎁</div>No rewards yet</div>':
-    S.rewards.map(r=>`<div class="manage-item" id="reward-row-${r.id}"><div class="manage-item-body"><div class="manage-item-name">${esc(r.name)}</div><div class="manage-item-meta">${r.type==='timer'?`⏱ ${r.timerPts} pts/${r.timerHours}hr`:`${r.cost} pts`} · <span class="reward-type-badge ${(!r.redeemType||r.redeemType==='persistent')?'rtb-persistent':'rtb-onetime'}">${(!r.redeemType||r.redeemType==='persistent')?'♻️ persistent':'1️⃣ one-time'}</span>${r.timesUsed?` · used ${r.timesUsed}×`:''}</div></div><div class="manage-item-actions"><button class="btn btn-sm" onclick="toggleEditReward('${r.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="removeReward('${r.id}')">Remove</button></div></div>
-<div class="edit-panel" id="reward-edit-${r.id}" style="display:none"><div class="edit-panel-row"><div style="flex:2;min-width:140px"><div class="edit-panel-label">Name</div><input type="text" id="re-name-${r.id}" value="${esc(r.name)}" style="width:100%"></div></div><div class="edit-panel-row">${r.type==='timer'?`<div style="flex:1;min-width:80px"><div class="edit-panel-label">Points</div><input type="number" id="re-tpts-${r.id}" value="${r.timerPts}" min="1" style="width:100%"></div><div style="flex:1;min-width:80px"><div class="edit-panel-label">Hours</div><input type="number" id="re-thrs-${r.id}" value="${r.timerHours}" min="0.25" step="0.25" style="width:100%"></div>`:`<div style="flex:1;min-width:80px"><div class="edit-panel-label">Points</div><input type="number" id="re-cost-${r.id}" value="${r.cost}" min="1" style="width:100%"></div>`}</div><div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveReward('${r.id}')">✓ Save</button><button class="btn btn-ghost btn-sm" onclick="toggleEditReward('${r.id}')">Cancel</button></div></div>`).join('');
+    S.rewards.map(r=>`<div class="manage-item" id="reward-row-${r.id}"><div class="manage-item-body"><div class="manage-item-name">${esc(r.name)}</div><div class="manage-item-meta">${r.type==='timer'?`⏱ ${fmtPts(r.timerPts)} pts/${r.timerHours}hr`:`${fmtPts(r.cost)} pts`} · ${assigneeBadge(r.userId)} · <span class="reward-type-badge ${(!r.redeemType||r.redeemType==='persistent')?'rtb-persistent':'rtb-onetime'}">${(!r.redeemType||r.redeemType==='persistent')?'♻️ persistent':'1️⃣ one-time'}</span>${r.timesUsed?` · used ${r.timesUsed}×`:''}</div></div><div class="manage-item-actions"><button class="btn btn-sm" onclick="toggleEditReward('${r.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="removeReward('${r.id}')">Remove</button></div></div>
+<div class="edit-panel" id="reward-edit-${r.id}" style="display:none"><div class="edit-panel-row"><div style="flex:2;min-width:140px"><div class="edit-panel-label">Name</div><input type="text" id="re-name-${r.id}" value="${esc(r.name)}" style="width:100%"></div><div style="flex:1;min-width:120px"><div class="edit-panel-label">Assign to</div><select id="re-user-${r.id}" style="width:100%">${assignOptionsHTML(r.userId)}</select></div></div><div class="edit-panel-row">${r.type==='timer'?`<div style="flex:1;min-width:80px"><div class="edit-panel-label">Points</div><input type="number" id="re-tpts-${r.id}" value="${r.timerPts}" min="0.01" step="0.01" style="width:100%"></div><div style="flex:1;min-width:80px"><div class="edit-panel-label">Hours</div><input type="number" id="re-thrs-${r.id}" value="${r.timerHours}" min="0.25" step="0.25" style="width:100%"></div>`:`<div style="flex:1;min-width:80px"><div class="edit-panel-label">Points</div><input type="number" id="re-cost-${r.id}" value="${r.cost}" min="0.01" step="0.01" style="width:100%"></div>`}</div><div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveReward('${r.id}')">✓ Save</button><button class="btn btn-ghost btn-sm" onclick="toggleEditReward('${r.id}')">Cancel</button></div></div>`).join('');
   const ul=document.getElementById('manageUserList');
   ul.innerHTML=!S.users.length?'<div class="empty" style="padding:1.5rem">No users</div>':
-    S.users.map(u=>{const isMe=currentUser&&currentUser.id===u.id;return`<div class="user-item"><div class="user-item-avatar">${u.username.slice(0,2).toUpperCase()}</div><div class="user-item-body"><div class="user-item-name">${esc(cap(u.username))} ${isMe?'<span class="tag tag-group">you</span>':''}</div><div class="user-item-meta">${u.role||'chore'} user · @${esc(u.username)}</div></div><div style="display:flex;gap:6px"><button class="btn btn-sm btn-warning" onclick="changeUserPassword('${u.id}')">Pwd</button>${S.users.length>1?`<button class="btn btn-danger btn-sm" onclick="removeUser('${u.id}')">Remove</button>`:''}</div></div>`;}).join('');
+    S.users.map(u=>{
+      const isMe=currentUser&&currentUser.id===u.id;
+      const roles=userRoles(u);
+      const pref='ue-'+u.id+'-';
+      return `<div class="user-item" id="user-row-${u.id}"><div class="user-item-avatar">${u.username.slice(0,2).toUpperCase()}</div><div class="user-item-body"><div class="user-item-name">${esc(cap(u.username))} ${isMe?'<span class="tag tag-group">you</span>':''}</div><div class="user-item-meta">${roleBadgesHTML(roles)} · @${esc(u.username)}</div></div><div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="toggleEditUser('${u.id}')">Roles</button><button class="btn btn-sm btn-warning" onclick="changeUserPassword('${u.id}')">Pwd</button>${S.users.length>1?`<button class="btn btn-danger btn-sm" onclick="removeUser('${u.id}')">Remove</button>`:''}</div></div>
+<div class="edit-panel" id="user-edit-${u.id}" style="display:none">
+  <div class="edit-panel-label">Roles for ${esc(u.username)}</div>
+  <div class="role-checks">
+    <label class="role-check"><input type="checkbox" id="${pref}Chore"><div class="role-check-body"><div class="role-check-title">Chore user</div></div></label>
+    <label class="role-check"><input type="checkbox" id="${pref}Task"><div class="role-check-body"><div class="role-check-title">Task scheduler</div></div></label>
+    <label class="role-check"><input type="checkbox" id="${pref}Admin"><div class="role-check-body"><div class="role-check-title">Admin</div></div></label>
+  </div>
+  <div class="form-hint">Chore+Task not allowed. Admin can combine with Chore or Task.</div>
+  <div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveUserRoles('${u.id}')">✓ Save roles</button><button class="btn btn-ghost btn-sm" onclick="toggleEditUser('${u.id}')">Cancel</button></div>
+</div>`;
+    }).join('');
   document.getElementById('setTarget').value=S.settings.dailyTarget;
   document.getElementById('setPenalty').value=S.settings.penaltyPts;
   refreshGroupSelect();
@@ -1298,50 +1819,87 @@ function renderManage(){
 function toggleEditChore(id){const p=document.getElementById('chore-edit-'+id);const o=p.style.display!=='none';document.querySelectorAll('[id^="chore-edit-"],[id^="reward-edit-"]').forEach(x=>x.style.display='none');if(!o)p.style.display='';}
 function saveChore(id){
   const c=S.chores.find(x=>x.id===id);if(!c)return;
-  const name=document.getElementById('ce-name-'+id).value.trim(),pts=parseInt(document.getElementById('ce-pts-'+id).value),group=document.getElementById('ce-group-'+id).value.trim()||null;
-  if(!name){toast('Name empty','err');return;}if(!pts||pts<1){toast('Invalid pts','err');return;}
-  if(S.checked[id]&&!c.group){S.points-=c.pts;S.points+=pts;}
+  const name=document.getElementById('ce-name-'+id).value.trim(),pts=parsePts(document.getElementById('ce-pts-'+id).value,{min:0.01}),group=document.getElementById('ce-group-'+id).value.trim()||null;
+  const newUid=document.getElementById('ce-user-'+id)?.value||c.userId||defaultAssignUserId();
+  if(!name){toast('Name empty','err');return;}if(pts==null){toast('Invalid pts (min 0.01)','err');return;}
+  const oldUid=c.userId;
+  const pOld=ensureProgress(oldUid);
+  const wasChecked=!!(pOld&&pOld.checked[id]);
+  if(wasChecked&&!c.group){addToBank(-c.pts,oldUid);addToBank(pts,oldUid);}
+  if(oldUid!==newUid&&wasChecked){
+    if(!c.group)addToBank(-pts,oldUid);
+    else{
+      const oldList=(S.chores||[]).filter(x=>x.userId===oldUid);
+      if(isGroupDone(c.group,oldList,oldUid))addToBank(-groupPts(c.group,oldList),oldUid);
+    }
+    delete pOld.checked[id];
+  }
   const oldName=c.name,oldPts=c.pts,oldGroup=c.group;
-  c.name=name;c.pts=pts;c.group=group;
-  logAdmin('chore-edit',`Chore edited: "${oldName}"→"${name}"`,`pts: ${oldPts}→${pts}${oldGroup!==group?`, group: ${oldGroup||'none'}→${group||'none'}`:''}`);
+  c.name=name;c.pts=pts;c.group=group;c.userId=newUid;
+  logAdmin('chore-edit',`Chore edited: "${oldName}"→"${name}"`,`pts: ${fmtPts(oldPts)}→${fmtPts(pts)}${oldGroup!==group?`, group: ${oldGroup||'none'}→${group||'none'}`:''}${oldUid!==newUid?`, assign: ${usernameById(oldUid)}→${usernameById(newUid)}`:''}`);
   save();updateBank();renderManage();if(activeTab==='dashboard')renderDashboard();toast(`"${name}" updated!`,'ok');
 }
 function toggleEditReward(id){const p=document.getElementById('reward-edit-'+id);const o=p.style.display!=='none';document.querySelectorAll('[id^="chore-edit-"],[id^="reward-edit-"]').forEach(x=>x.style.display='none');if(!o)p.style.display='';}
 function saveReward(id){
   const r=S.rewards.find(x=>x.id===id);if(!r)return;
   const name=document.getElementById('re-name-'+id).value.trim();if(!name){toast('Name empty','err');return;}
-  const oldName=r.name;
-  if(r.type==='timer'){const p=parseFloat(document.getElementById('re-tpts-'+id).value),h=parseFloat(document.getElementById('re-thrs-'+id).value);if(!p||!h){toast('Invalid values','err');return;}logAdmin('reward-edit',`Reward edited: "${oldName}"→"${name}"`,`${r.timerPts}pts/${r.timerHours}hr → ${p}pts/${h}hr`);r.timerPts=p;r.timerHours=h;}
-  else{const c=parseInt(document.getElementById('re-cost-'+id).value);if(!c||c<1){toast('Invalid pts','err');return;}logAdmin('reward-edit',`Reward edited: "${oldName}"→"${name}"`,`pts: ${r.cost}→${c}`);r.cost=c;}
-  r.name=name;save();renderManage();renderRewards();toast(`"${name}" updated!`,'ok');
+  const newUid=document.getElementById('re-user-'+id)?.value||r.userId||defaultAssignUserId();
+  const oldName=r.name,oldUid=r.userId;
+  if(r.type==='timer'){const p=parsePts(document.getElementById('re-tpts-'+id).value,{min:0.01}),h=parseFloat(document.getElementById('re-thrs-'+id).value);if(p==null||!h||h<=0){toast('Invalid values','err');return;}logAdmin('reward-edit',`Reward edited: "${oldName}"→"${name}"`,`${fmtPts(r.timerPts)}pts/${r.timerHours}hr → ${fmtPts(p)}pts/${h}hr${oldUid!==newUid?`, assign: ${usernameById(oldUid)}→${usernameById(newUid)}`:''}`);r.timerPts=p;r.timerHours=h;}
+  else{const c=parsePts(document.getElementById('re-cost-'+id).value,{min:0.01});if(c==null){toast('Invalid pts','err');return;}logAdmin('reward-edit',`Reward edited: "${oldName}"→"${name}"`,`pts: ${fmtPts(r.cost)}→${fmtPts(c)}${oldUid!==newUid?`, assign: ${usernameById(oldUid)}→${usernameById(newUid)}`:''}`);r.cost=c;}
+  r.name=name;r.userId=newUid;save();renderManage();renderRewards();toast(`"${name}" updated!`,'ok');
 }
 function saveSetting(key,inputId){
-  const v=parseInt(document.getElementById(inputId).value);if(isNaN(v)||v<0){toast('Invalid number','err');return;}
+  const allowZero=key==='penaltyPts';
+  const v=parsePts(document.getElementById(inputId).value,{min:allowZero?0:0.01,allowZero});
+  if(v==null){toast('Invalid number','err');return;}
   const oldVal=S.settings[key];
   S.settings[key]=v;
-  logAdmin('setting-change',`Setting changed: ${key}`,`${oldVal} → ${v}`);
+  logAdmin('setting-change',`Setting changed: ${key}`,`${fmtPts(oldVal)} → ${fmtPts(v)}`);
   save();updateBank();toast('Saved!','ok');
 }
 function adjustPoints(){
-  const a=parseInt(document.getElementById('adjustAmt').value);if(isNaN(a)){toast('Enter a number','err');return;}
-  S.points+=a;
-  logEntry('bonus',`Manual: ${a>0?'+':''}${a} pts`,a);
-  logAdmin('setting-change',`Bank manually adjusted`,`${a>0?'+':''}${a} pts, new balance: ${S.points}`);
-  document.getElementById('adjustAmt').value='';save();updateBank();toast(`${a>0?'+':''}${a} pts applied`,'ok');
+  if(!hasActiveView()){toast('Select a user first','err');return;}
+  const raw=document.getElementById('adjustAmt').value;
+  const a=round2(parseFloat(raw));
+  if(raw===''||isNaN(a)||a===0){toast('Enter a non-zero number','err');return;}
+  const uid=activeUserId();
+  addToBank(a,uid);
+  logEntry('bonus',`Manual: ${a>0?'+':''}${fmtPts(a)} pts`,a,uid);
+  logAdmin('setting-change',`Bank manually adjusted (${usernameById(uid)})`,`${a>0?'+':''}${fmtPts(a)} pts, new balance: ${fmtPts(prog(uid).points)}`);
+  document.getElementById('adjustAmt').value='';save();updateBank();toast(`${a>0?'+':''}${fmtPts(a)} pts applied`,'ok');
 }
 
 // ── RESET / CLEAR ──
 function resetDay(){
+  if(!hasActiveView()){toast('Select a user first','err');return;}
   if(!confirm("Reset today's checkmarks?"))return;
-  S.chores.filter(c=>!c.group&&S.checked[c.id]).forEach(c=>{S.points-=c.pts;});
-  groups().filter(g=>isGroupDone(g)).forEach(g=>{S.points-=groupPts(g);});
-  (S.oneTimeTasks||[]).filter(t=>t.date===todayStr()&&t.done).forEach(t=>{S.points-=t.pts;t.done=false;});
-  const h=getTodayHistory();h.entries.push({type:'reset',label:'Day manually reset',pts:0,time:fmtTime()});
-  logAdmin('setting-change','Day manually reset',`by parent on ${todayStr()}`);
-  S.checked={};S.lastResetDate=todayStr();save();updateBank();renderDashboard();toast('Day reset','info');
+  const uid=activeUserId();
+  const p=prog(uid);
+  const chores=myChores();
+  chores.filter(c=>!c.group&&p.checked[c.id]).forEach(c=>{addToBank(-c.pts,uid);});
+  groups(chores).filter(g=>isGroupDone(g,chores,uid)).forEach(g=>{addToBank(-groupPts(g,chores),uid);});
+  myOneTimes().filter(t=>t.date===todayStr()&&t.done).forEach(t=>{addToBank(-t.pts,uid);t.done=false;});
+  const h=getTodayHistory(uid);h.entries.push({type:'reset',label:'Day manually reset',pts:0,time:fmtTime()});
+  logAdmin('setting-change','Day manually reset',`${usernameById(uid)} on ${todayStr()}`);
+  p.checked={};p.lastResetDate=todayStr();save();updateBank();renderDashboard();toast('Day reset','info');
 }
-function resetPoints(){if(!confirm('Reset bank to 0?'))return;logAdmin('setting-change','Bank reset to 0',`was ${S.points} pts`);S.points=0;save();updateBank();toast('Bank reset','info');}
-function clearHistory(){if(!confirm('Clear all history?'))return;logAdmin('setting-change','History cleared','all activity and admin logs cleared');S.history=[];S.adminLog=[];save();renderHistory();toast('History cleared','info');}
+function resetPoints(){
+  if(!hasActiveView()){toast('Select a user first','err');return;}
+  if(!confirm('Reset bank to 0?'))return;
+  const uid=activeUserId(),p=prog(uid);
+  logAdmin('setting-change','Bank reset to 0',`${usernameById(uid)} was ${fmtPts(p.points)} pts`);
+  p.points=0;save();updateBank();toast('Bank reset','info');
+}
+function clearHistory(){
+  if(!hasActiveView()){toast('Select a user first','err');return;}
+  if(!confirm('Clear all history for this user?'))return;
+  const uid=activeUserId(),p=prog(uid);
+  logAdmin('setting-change','History cleared',`${usernameById(uid)} activity cleared`);
+  p.history=[];
+  if(isAdmin())S.adminLog=[];
+  save();renderHistory();toast('History cleared','info');
+}
 async function clearAll(){
   if(!confirm('Clear ALL data from server?'))return;if(!confirm('100% sure?'))return;
   if(tvSession.active){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
@@ -1350,20 +1908,52 @@ async function clearAll(){
 }
 
 // ── MIDNIGHT ──
+// Daily reset clears each user's checkmarks in userProgress (never deletes chores/bank/history defs).
 function midnightCheck(){
-  const today=todayStr();if(S.lastResetDate===today)return;
-  if(S.lastResetDate&&S.lastResetDate!==today){
-    const earned=todayEarned(),target=S.settings.dailyTarget,penalty=S.settings.penaltyPts;
-    if(earned<target&&penalty>0){S.points-=penalty;const prev=S.history.find(x=>x.date===S.lastResetDate)||getTodayHistory();prev.entries.push({type:'penalty',label:`Target missed (${earned}/${target} pts)`,pts:-penalty,time:'23:59'});prev.penalty=(prev.penalty||0)+penalty;}
-  }
-  S.checked={};S.lastResetDate=today;save();updateBank();renderDashboard();
+  const today=todayStr();
+  const uids=new Set([
+    ...Object.keys(S.userProgress||{}),
+    ...(S.chores||[]).map(c=>c.userId).filter(Boolean),
+    ...(S.users||[]).filter(u=>userRoles(u).includes('chore')).map(u=>u.id)
+  ]);
+  let changed=false;
+  uids.forEach(uid=>{
+    const p=ensureProgress(uid);
+    if(p.lastResetDate===today)return;
+    if(p.lastResetDate&&p.lastResetDate!==today){
+      const earned=todayEarned(uid),target=S.settings.dailyTarget,penalty=S.settings.penaltyPts;
+      if(earned<target&&penalty>0){
+        addToBank(-penalty,uid);
+        let prev=p.history.find(x=>x.date===p.lastResetDate);
+        if(!prev){prev={date:p.lastResetDate,entries:[],dailyEarned:0,dailySpent:0,penalty:0};p.history.unshift(prev);}
+        prev.entries.push({type:'penalty',label:`Target missed (${fmtPts(earned)}/${fmtPts(target)} pts)`,pts:round2(-penalty),time:'23:59'});
+        prev.penalty=round2((prev.penalty||0)+penalty);
+      }
+    }
+    p.checked={};
+    p.lastResetDate=today;
+    changed=true;
+  });
+  if(!changed)return;
+  save();
+  updateBank();
+  if(document.getElementById('choreShell')?.style.display!=='none') renderDashboard();
 }
-function scheduleNextMidnight(){const now=new Date(),next=new Date(now);next.setDate(now.getDate()+1);next.setHours(0,0,5,0);setTimeout(()=>{midnightCheck();scheduleNextMidnight();},next-now);}
+function scheduleNextMidnight(){
+  const now=new Date(),next=new Date(now);
+  next.setDate(now.getDate()+1);next.setHours(0,0,5,0);
+  setTimeout(()=>{midnightCheck();scheduleNextMidnight();},Math.max(1000,next-now));
+}
+// Also re-check when the tab becomes visible (covers overnight with app left open)
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden||!currentUser)return;
+  if(document.getElementById('choreShell')?.style.display!=='none') midnightCheck();
+});
 
 // ── KEYBOARD ──
 document.addEventListener('keydown',e=>{
   if(document.getElementById('pinModal').classList.contains('open')){if(e.key>='0'&&e.key<='9')pinKey(e.key);else if(e.key==='Backspace')pinDel();else if(e.key==='Escape')pinCancel();return;}
-  if(e.key==='Enter'){if(activeTab==='manage')addChore();if(activeTaskTab==='tasks'&&currentUser?.role==='task')addTask();}
+  if(e.key==='Enter'){if(activeTab==='manage')addChore();if(activeTaskTab==='tasks'&&hasRole('current','task'))addTask();}
 });
 
 // ── START ──
