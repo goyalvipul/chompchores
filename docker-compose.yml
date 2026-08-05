@@ -1,0 +1,17 @@
+services:
+  chompcores:
+    build: .
+    container_name: chompcores
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATA_FILE=/data/data.json
+    volumes:
+      - chompcores_data:/data    # data.json lives here — survives container restarts/rebuilds
+      - ./index.html:/app/index.html:ro
+      - ./server.js:/app/server.js:ro
+    restart: unless-stopped      # auto-starts on machine reboot
+
+volumes:
+  chompcores_data:

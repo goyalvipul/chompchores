@@ -1,0 +1,7 @@
+bkp/
+data.json
+data.json.tmp
+*.tmp
+node_modules/
+.env
+.DS_Store

@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChompChores ⚡</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#fff;--surface-muted:#eeede8;--border:#e0ddd5;--border-strong:#c4c1b8;
+  --text:#1a1917;--text-muted:#68665e;--text-hint:#9b9890;
+  --accent:#6c47e8;--accent-light:#f0ecff;--accent-border:#c4b5fd;
+  --success:#16a34a;--success-light:#f0fdf4;--success-border:#86efac;
+  --danger:#dc2626;--danger-light:#fef2f2;--danger-border:#fca5a5;
+  --warning:#d97706;--warning-light:#fffbeb;--warning-border:#fcd34d;
+  --radius:10px;--radius-sm:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.14),0 4px 8px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .5s}
+body.danger-mode{animation:danger-pulse 3s ease-in-out infinite}
+@keyframes danger-pulse{0%,100%{background:#fff0f0}50%{background:#ffe4e4}}
+.screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:2rem;text-align:center;gap:1rem}
+.screen.hidden{display:none}
+.login-card{background:var(--surface);border-radius:20px;border:1px solid var(--border);padding:2.5rem 2rem;width:min(400px,100%);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:1.25rem}
+.login-logo{text-align:center;font-size:26px;font-weight:800;letter-spacing:-.5px}
+.login-logo span{color:var(--accent)}
+.login-welcome{text-align:center;font-size:14px;color:var(--text-muted)}
+.login-field{display:flex;flex-direction:column;gap:5px}
+.login-label{font-size:12px;font-weight:600;color:var(--text-muted)}
+.login-field input{font-size:15px;padding:11px 14px}
+.login-error{font-size:13px;color:var(--danger);text-align:center;min-height:18px;font-weight:500}
+.login-btn{width:100%;padding:12px;font-size:15px;font-weight:700;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;cursor:pointer;transition:opacity .15s}
+.login-btn:hover{opacity:.88}
+.shell{max-width:720px;margin:0 auto;padding:1rem 1rem 5rem}
+.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.25rem;gap:8px}
+.topbar-left{display:flex;align-items:center;gap:8px;min-width:0}
+.topbar-center{text-align:center;font-size:20px;font-weight:800;letter-spacing:-.5px;white-space:nowrap}
+.topbar-center span{color:var(--accent)}
+.topbar-right{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.user-greeting{font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .4s}
+.bank-card{background:var(--surface);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow);transition:border-color .3s,background .3s}
+.bank-card.negative{border-color:var(--danger-border);background:var(--danger-light)}
+.bank-top{display:flex;align-items:flex-start;justify-content:space-between}
+.bank-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-hint);margin-bottom:4px}
+.bank-pts{font-size:48px;font-weight:800;letter-spacing:-3px;line-height:1;transition:color .3s}
+.bank-pts.positive{color:var(--success)}.bank-pts.negative{color:var(--danger)}.bank-pts.zero{color:var(--text-hint)}
+.bank-right{text-align:right}
+.bank-stat{font-size:13px;color:var(--text-muted);line-height:1.6}
+.bank-stat strong{color:var(--text);font-weight:600}
+.bank-target-bar{margin-top:1rem}
+.bank-target-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px}
+.progress-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .4s,background .3s}
+.progress-fill.hit{background:var(--success)}.progress-fill.danger{background:var(--danger)}
+.nav{display:flex;gap:3px;background:var(--surface-muted);border-radius:var(--radius);padding:4px;margin-bottom:1.5rem}
+.nav-btn{flex:1;padding:8px 6px;border:none;background:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;color:var(--text-muted);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px;font-family:inherit;white-space:nowrap}
+.nav-btn:hover{color:var(--text);background:rgba(255,255,255,.5)}
+.nav-btn.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.section-title{font-size:15px;font-weight:700}
+.section-sub{font-size:13px;color:var(--text-muted);margin-top:2px}
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:1rem 1.25rem;box-shadow:var(--shadow);margin-bottom:1rem}
+input[type=text],input[type=number],input[type=password],input[type=date],input[type=time],select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);color:var(--text);font-family:inherit;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,71,232,.12)}
+input::placeholder{color:var(--text-hint)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6960' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;cursor:pointer}
+.form-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.form-col{display:flex;flex-direction:column;gap:4px}
+.form-col.f1{flex:1;min-width:120px}
+.form-col.w80{width:80px;flex-shrink:0}
+.form-col.w120{width:120px;flex-shrink:0}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted)}
+.form-hint{font-size:12px;color:var(--text-hint);margin-top:6px}
+.btn{padding:9px 16px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .12s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:var(--surface-muted)}.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn-primary:hover{opacity:.88;background:var(--accent)}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-xs{padding:4px 8px;font-size:11px}.btn-icon{padding:7px 8px}
+.btn-danger{background:var(--danger-light);border-color:var(--danger-border);color:var(--danger)}.btn-danger:hover{background:#fee2e2}
+.btn-success{background:var(--success-light);border-color:var(--success-border);color:var(--success)}.btn-success:hover{background:#dcfce7}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--text-muted)}.btn-ghost:hover{background:var(--surface-muted);color:var(--text)}
+.btn-warning{background:var(--warning-light);border-color:var(--warning-border);color:var(--warning)}
+.chore-list{display:flex;flex-direction:column;gap:8px}
+.chore-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;user-select:none;transition:all .15s;box-shadow:var(--shadow)}
+.chore-item:hover{border-color:var(--border-strong)}
+.chore-item.done{background:var(--success-light);border-color:var(--success-border)}
+.chore-item.priority-high{border-left:3px solid var(--danger)}
+.chore-item.priority-medium{border-left:3px solid var(--warning)}
+.chore-item.one-time{background:var(--warning-light);border-color:var(--warning-border)}
+.chore-item.group-child{margin-left:20px;border-left:3px solid var(--accent-border);border-radius:0 var(--radius) var(--radius) 0}
+.chore-item.group-child.done{border-left-color:var(--success-border)}
+.chore-item.group-head{background:var(--accent-light);border-color:var(--accent-border);cursor:default;pointer-events:none}
+.chore-item.group-head.done{background:var(--success-light);border-color:var(--success-border)}
+.chore-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border-strong);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;background:var(--surface)}
+.chore-item:not(.group-head):hover .chore-check{border-color:var(--accent)}
+.chore-check.checked{background:var(--success);border-color:var(--success)}
+.chore-check svg{display:none}.chore-check.checked svg{display:block}
+.chore-body{flex:1;min-width:0}
+.chore-name{font-size:14px;font-weight:500}
+.chore-item.done .chore-name{text-decoration:line-through;opacity:.5}
+.chore-meta{font-size:12px;color:var(--text-muted);margin-top:1px}
+.pts-badge{font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--accent-light);color:var(--accent);flex-shrink:0}
+.pts-badge.earned{background:var(--success-light);color:var(--success)}
+.pts-badge.locked{background:var(--surface-muted);color:var(--text-hint)}
+.progress-track-sm{height:4px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
+.progress-fill-sm{height:100%;border-radius:2px;background:var(--accent);transition:width .4s}
+.progress-fill-sm.done{background:var(--success)}
+.pri{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase}
+.pri-high{background:#fef2f2;color:#dc2626}.pri-medium{background:#fffbeb;color:#d97706}.pri-low{background:#f0fdf4;color:#16a34a}
+.task-list{display:flex;flex-direction:column;gap:8px}
+.task-item{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;box-shadow:var(--shadow);transition:all .15s}
+.task-item.overdue{border-left:3px solid var(--danger);background:var(--danger-light)}
+.task-item.due-today{border-left:3px solid var(--warning);background:var(--warning-light)}
+.task-item.completed-task{opacity:.6;background:var(--success-light);border-color:var(--success-border)}
+.task-item.deferred{opacity:.7;background:var(--surface-muted)}
+.task-item-top{display:flex;align-items:flex-start;gap:10px}
+.task-item-body{flex:1;min-width:0}
+.task-item-name{font-size:14px;font-weight:600}
+.task-item.completed-task .task-item-name{text-decoration:line-through;opacity:.6}
+.task-item-meta{font-size:12px;color:var(--text-muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.task-item-actions{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
+.task-item-desc{font-size:13px;color:var(--text-muted);margin-top:6px;line-height:1.5}
+.status-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase}
+.status-pending{background:#eff6ff;color:#2563eb}
+.status-completed{background:var(--success-light);color:var(--success)}
+.status-deferred{background:var(--surface-muted);color:var(--text-hint)}
+.reward-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
+.reward-emoji{width:42px;height:42px;border-radius:10px;background:var(--warning-light);border:1px solid var(--warning-border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.reward-body{flex:1;min-width:0}
+.reward-name{font-size:14px;font-weight:500}
+.reward-cost{font-size:12px;color:var(--text-muted);margin-top:2px}
+.reward-actions{display:flex;gap:6px;flex-shrink:0}
+.reward-type-badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:4px}
+.rtb-timer{background:#1a1a2e;color:#e94560}.rtb-std{background:var(--accent-light);color:var(--accent)}
+.rtb-persistent{background:#f0fdf4;color:#16a34a;border:1px solid #86efac}
+.rtb-onetime{background:#fffbeb;color:#d97706;border:1px solid #fcd34d}
+.reward-used-count{font-size:11px;color:var(--text-hint);margin-top:2px}
+.reward-item.used-up{opacity:.5;background:var(--surface-muted)}
+.history-rewards-summary{background:var(--warning-light);border:1px solid var(--warning-border);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:8px}
+.history-rewards-title{font-size:12px;font-weight:700;color:var(--warning);margin-bottom:6px}
+.history-reward-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--warning-border)}
+.history-reward-row:last-child{border-bottom:none}
+.history-reward-name{color:var(--text)}
+.history-reward-pts{font-weight:700;color:var(--danger)}
+.insuf-card{background:var(--warning-light);border:1.5px solid var(--warning-border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:4px}
+.insuf-title{font-size:14px;font-weight:700;color:var(--warning);margin-bottom:6px}
+.insuf-gap{font-size:13px;color:var(--text-muted);margin-bottom:10px}
+.insuf-chore-list{display:flex;flex-direction:column;gap:5px}
+.insuf-chore{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px}
+.insuf-chore-pts{font-weight:700;color:var(--success);font-size:12px}
+.tv-card{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;border:2px solid #e94560;padding:1.25rem 1.5rem;margin-bottom:1rem;color:#fff;position:relative;overflow:hidden}
+.tv-card::before{content:'⏱';position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:64px;opacity:.1}
+.tv-card-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e94560;margin-bottom:6px}
+.tv-timer-display{font-size:52px;font-weight:800;letter-spacing:-3px;line-height:1;font-variant-numeric:tabular-nums;color:#4ade80;animation:tv-pulse 1s ease-in-out infinite}
+@keyframes tv-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.tv-pts-rate{font-size:13px;color:rgba(255,255,255,.6);margin-top:4px}
+.tv-pts-rate strong{color:#fbbf24}
+.tv-controls{display:flex;gap:10px;margin-top:1rem;flex-wrap:wrap}
+.tv-btn{padding:10px 20px;border-radius:var(--radius);border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.tv-btn-stop{background:#4ade80;color:#14532d}.tv-btn-stop:hover{background:#22c55e}
+.tv-btn-cancel{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)}.tv-btn-cancel:hover{background:rgba(255,255,255,.2)}
+.tv-session-info{font-size:11px;color:rgba(255,255,255,.4);margin-top:8px}
+.history-day{margin-bottom:1rem}
+.history-day-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-muted);border-radius:var(--radius) var(--radius) 0 0;border:1px solid var(--border);border-bottom:none;cursor:pointer}
+.history-day-hd:hover{background:var(--border)}
+.history-day-title{font-size:14px;font-weight:700}
+.history-day-summary{font-size:12px;color:var(--text-muted);margin-top:1px}
+.history-day-pts{font-size:15px;font-weight:800}
+.history-day-pts.pos{color:var(--success)}.history-day-pts.neg{color:var(--danger)}
+.history-entries{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;display:none}
+.history-entries.open{display:block}
+.history-entry{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.history-entry:last-child{border-bottom:none}
+.history-entry-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.hi-chore{background:var(--success-light)}.hi-reward{background:var(--warning-light)}.hi-penalty{background:var(--danger-light)}.hi-bonus{background:var(--accent-light)}.hi-reset{background:var(--surface-muted)}
+.history-entry-body{flex:1}
+.history-entry-name{font-weight:500}
+.history-entry-time{font-size:11px;color:var(--text-hint);margin-top:1px}
+.history-entry-pts{font-weight:700;font-size:13px;white-space:nowrap}
+.history-entry-pts.pos{color:var(--success)}.history-entry-pts.neg{color:var(--danger)}
+.hi-admin{background:#1a1a2e}
+.history-entry.admin-entry{background:rgba(26,26,46,0.04);border-left:2px solid #6c47e8}
+.admin-badge{font-size:10px;font-weight:700;background:#1a1a2e;color:#c4b5fd;padding:1px 5px;border-radius:3px;margin-left:4px}
+.history-day-admin-count{font-size:11px;color:var(--accent);font-weight:600;margin-top:1px}
+.cal-event{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:8px;box-shadow:var(--shadow)}
+.cal-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.cal-event-body{flex:1;min-width:0}
+.cal-event-title{font-size:14px;font-weight:500}
+.cal-event-time{font-size:12px;color:var(--text-muted);margin-top:2px}
+.cal-feed-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.cal-feed-item:last-child{border-bottom:none}
+.cal-feed-body{flex:1;min-width:0}
+.cal-feed-name{font-size:14px;font-weight:500}
+.cal-feed-url{font-size:11px;color:var(--text-hint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.manage-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.manage-item:last-child{border-bottom:none}
+.manage-item-body{flex:1;min-width:0}
+.manage-item-name{font-size:14px;font-weight:500}
+.manage-item-meta{font-size:12px;color:var(--text-muted);margin-top:1px}
+.manage-item-actions{display:flex;gap:6px;flex-shrink:0}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px}
+.tag-group{background:var(--accent-light);color:var(--accent)}.tag-solo{background:var(--surface-muted);color:var(--text-hint)}
+.edit-panel{background:var(--accent-light);border:1px solid var(--accent-border);border-radius:var(--radius);padding:12px 14px;margin:4px 0 8px;display:flex;flex-direction:column;gap:10px}
+.edit-panel-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.edit-panel-label{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:3px}
+.edit-panel input,.edit-panel select{padding:7px 10px;font-size:13px;border-radius:var(--radius-sm);border:1px solid var(--accent-border);background:var(--surface);color:var(--text)}
+.edit-panel input:focus,.edit-panel select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(108,71,232,.15)}
+.edit-panel-actions{display:flex;gap:6px;margin-top:2px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-body{flex:1}
+.setting-label{font-size:14px;font-weight:500}
+.setting-desc{font-size:12px;color:var(--text-muted);margin-top:2px}
+.setting-control{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:16px;padding:2rem 1.75rem;width:min(380px,92vw);box-shadow:var(--shadow-lg);transform:translateY(12px);transition:transform .2s;text-align:center}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:14px;color:var(--text-muted);margin-bottom:1.5rem}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:1.5rem}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border-strong);transition:all .15s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-dot.error{background:var(--danger);border-color:var(--danger)}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto}
+.pin-key{aspect-ratio:1;border-radius:var(--radius);border:1px solid var(--border-strong);background:var(--surface);font-size:20px;font-weight:600;cursor:pointer;transition:all .12s;font-family:inherit;color:var(--text);display:flex;align-items:center;justify-content:center}
+.pin-key:hover{background:var(--accent-light);border-color:var(--accent-border)}
+.pin-key:active{transform:scale(.93)}
+.pin-key.del{font-size:16px;color:var(--text-muted)}.pin-key.zero{grid-column:2}
+.lock-btn{width:38px;height:38px;border-radius:50%;border:2px solid var(--border-strong);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.lock-btn:hover{border-color:var(--accent);transform:scale(1.05)}.lock-btn:active{transform:scale(.95)}
+.lock-btn.unlocked{border-color:var(--success);background:var(--success-light)}
+.lock-btn.unlocked:hover{border-color:var(--danger);background:var(--danger-light)}
+.lock-btn svg{width:16px;height:16px}
+.lock-btn.locked svg{stroke:var(--text-muted)}.lock-btn.unlocked svg{stroke:var(--success)}.lock-btn.unlocked:hover svg{stroke:var(--danger)}
+@keyframes unlock-pop{0%{transform:scale(1)}40%{transform:scale(1.25)}70%{transform:scale(.95)}100%{transform:scale(1)}}
+.lock-btn.just-unlocked{animation:unlock-pop .4s ease}
+.readonly-notice{display:flex;align-items:center;gap:8px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--text-muted);margin-bottom:1rem}
+.danger-banner{display:none;background:var(--danger-light);border:1px solid var(--danger-border);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--danger);font-weight:600;margin-bottom:1rem;text-align:center}
+body.danger-mode .danger-banner{display:block}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--text-hint);font-size:14px}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.user-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.user-item:last-child{border-bottom:none}
+.user-item-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.user-item-body{flex:1}
+.user-item-name{font-size:14px;font-weight:500}
+.user-item-meta{font-size:12px;color:var(--text-muted);margin-top:1px}
+@keyframes remind-pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}70%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
+.reminding{animation:remind-pulse 1.5s infinite}
+#toast-wrap{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:600;box-shadow:var(--shadow-md);white-space:nowrap;animation:t-in .25s ease,t-out .25s ease 2.5s forwards}
+.t-ok{background:var(--success-light);border:1px solid var(--success-border);color:var(--success)}
+.t-err{background:var(--danger-light);border:1px solid var(--danger-border);color:var(--danger)}
+.t-info{background:var(--accent-light);border:1px solid var(--accent-border);color:var(--accent)}
+.t-warn{background:var(--warning-light);border:1px solid var(--warning-border);color:var(--warning)}
+@keyframes t-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes t-out{to{opacity:0}}
+@media(max-width:480px){.shell{padding:1rem .75rem 5rem}.bank-pts{font-size:36px}.nav-btn{font-size:10px;padding:7px 3px}.tv-timer-display{font-size:40px}.topbar-center{font-size:16px}}
+</style>
+</head>
+<body>
+<div id="toast-wrap"></div>
+<div id="offlineScreen" class="screen">
+  <div style="font-size:56px">📡</div>
+  <div style="font-size:20px;font-weight:700">Can't reach the server</div>
+  <div style="font-size:14px;color:var(--text-muted);max-width:300px">Make sure ChompChores server is running, then retry.</div>
+  <button class="btn btn-primary" onclick="initApp()">↺ Retry</button>
+</div>
+<div id="loginScreen" class="screen hidden">
+  <div class="login-card">
+    <div><div class="login-logo">Chomp<span>Chores</span> ⚡</div><div class="login-welcome">Welcome back! Sign in to continue</div></div>
+    <div class="login-field"><div class="login-label">Username</div><input type="text" id="loginUsername" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
+    <div class="login-field"><div class="login-label">Password</div><input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" onclick="doLogin()">Sign in →</button>
+  </div>
+</div>
+<div class="modal-overlay" id="pinModal">
+  <div class="modal">
+    <div class="modal-title" id="pinModalTitle">🔒 Parent Access</div>
+    <div class="modal-sub" id="pinModalSub">Enter PIN to continue</div>
+    <div class="pin-dots"><div class="pin-dot" id="dot0"></div><div class="pin-dot" id="dot1"></div><div class="pin-dot" id="dot2"></div><div class="pin-dot" id="dot3"></div></div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinKey('1')">1</button><button class="pin-key" onclick="pinKey('2')">2</button><button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button><button class="pin-key" onclick="pinKey('5')">5</button><button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button><button class="pin-key" onclick="pinKey('8')">8</button><button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button><button class="pin-key zero" onclick="pinKey('0')">0</button><button class="pin-key" onclick="pinCancel()" style="font-size:13px;color:var(--text-muted)">✕</button>
+    </div>
+    <div id="pinError" style="margin-top:1rem;font-size:13px;color:var(--danger);min-height:20px"></div>
+  </div>
+</div>
+<div class="shell" id="appShell" style="display:none">
+  <div class="topbar">
+    <div class="topbar-left"><div class="user-avatar" id="userAvatar">?</div><div class="user-greeting" id="userGreeting">Hey!</div></div>
+    <div class="topbar-center">Chomp<span>Chores</span> ⚡</div>
+    <div class="topbar-right">
+      <div class="sync-dot" id="syncDot" style="background:#22c55e" title="Saved"></div>
+      <button class="btn btn-ghost btn-sm" id="resetDayBtn" onclick="requirePin(resetDay)" style="display:none">↺ Reset</button>
+      <button class="lock-btn locked" id="lockBtn" onclick="handleLockToggle()" title="Parent access">
+        <svg id="lockIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="font-size:16px;padding:6px 8px" title="Sign out">⎋</button>
+    </div>
+  </div>
+  <!-- CHORE SHELL -->
+  <div id="choreShell">
+    <div class="bank-card" id="bankCard">
+      <div class="bank-top">
+        <div><div class="bank-label">Point Bank</div><div class="bank-pts zero" id="bankPts">0</div><div class="bank-stat" id="bankSub">Start checking off chores!</div></div>
+        <div class="bank-right"><div class="bank-stat" id="bankProgress">—</div><div class="bank-stat" style="font-size:11px;color:var(--text-hint);margin-top:4px" id="bankDate"></div></div>
+      </div>
+      <div class="bank-target-bar">
+        <div class="bank-target-label"><span>Daily target</span><span id="targetLabel"><strong>0</strong> / 15 pts</span></div>
+        <div class="progress-track"><div class="progress-fill" id="targetBar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="danger-banner">⚠️ Balance is negative — keep earning to get back on track!</div>
+    <div class="nav">
+      <button class="nav-btn active" id="nav-dashboard" onclick="showTab('dashboard')">📋 Dashboard</button>
+      <button class="nav-btn" id="nav-rewards" onclick="showTab('rewards')">🎁 Rewards</button>
+      <button class="nav-btn" id="nav-history" onclick="showTab('history')">📜 History</button>
+      <button class="nav-btn" id="nav-calendar" onclick="showTab('calendar')">📅 Calendar</button>
+      <button class="nav-btn" id="nav-manage" onclick="showTab('manage')" style="display:none">⚙️ Manage</button>
+    </div>
+    <div id="tab-dashboard">
+      <div class="section-hd"><div><div class="section-title">Today's chores</div><div class="section-sub" id="dashSub">Tap to mark done</div></div></div>
+      <div class="chore-list" id="choreList"></div>
+      <div id="onetimeSection" style="display:none;margin-top:1.5rem">
+        <div class="section-hd"><div class="section-title">📌 Special tasks for today</div></div>
+        <div class="chore-list" id="onetimeList"></div>
+      </div>
+      <div id="calDashSection" style="display:none;margin-top:1.5rem">
+        <div class="section-hd"><div class="section-title">📅 Today's calendar</div></div>
+        <div id="calDashList"></div>
+      </div>
+    </div>
+    <div id="tab-rewards" style="display:none">
+      <div id="tvTimerSection"></div>
+      <div class="readonly-notice" id="rewardsLockedNotice" style="display:none">🔒 Unlock parent access to add or remove rewards</div>
+      <div class="card" id="rewardsAddForm" style="display:none">
+        <div class="section-title" style="margin-bottom:.75rem">Add a reward</div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Reward name</div><input type="text" id="rName" placeholder="e.g. Movie night"></div>
+          <div class="form-col f1"><div class="form-label">Redemption type</div><select id="rRedeemType"><option value="persistent">♻️ Persistent (reuse anytime)</option><option value="onetime">1️⃣ One-time (disappears after use)</option></select></div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Reward type</div><select id="rType" onchange="onRewardTypeChange()"><option value="standard">Standard (one-time redeem)</option><option value="timer">⏱ Timer based</option></select></div>
+        </div>
+        <div id="rStandardFields" class="form-row" style="margin-bottom:8px"><div class="form-col f1"><div class="form-label">Points</div><input type="number" id="rCost" placeholder="50" min="1"></div></div>
+        <div id="rTimerFields" style="display:none;margin-bottom:8px">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div class="form-col" style="flex:1;min-width:100px"><div class="form-label">Points</div><input type="number" id="rTimerPts" placeholder="10" min="1"></div>
+            <div style="padding-bottom:10px;color:var(--text-muted);font-size:13px;font-weight:600">per</div>
+            <div class="form-col" style="flex:1;min-width:100px"><div class="form-label">Hours</div><input type="number" id="rTimerHours" placeholder="1" min="0.25" step="0.25"></div>
+          </div>
+          <div class="form-hint">⏱ Deducted proportionally on actual time used.</div>
+        </div>
+        <div class="form-row"><button class="btn btn-primary" onclick="addReward()" style="margin-left:auto">Add reward</button></div>
+      </div>
+      <div class="section-hd"><div class="section-title">Reward store</div></div>
+      <div class="chore-list" id="rewardList"></div>
+    </div>
+    <div id="tab-history" style="display:none">
+      <div class="section-hd">
+        <div>
+          <div class="section-title">Activity history</div>
+          <div class="section-sub" id="historySub">Last 30 days</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="historyFilter" onchange="renderHistory()" style="padding:6px 10px;font-size:12px;width:auto">
+            <option value="all">All events</option>
+            <option value="chore">Chores</option>
+            <option value="reward">Rewards</option>
+            <option value="penalty">Penalties</option>
+            <option value="admin" id="historyFilterAdmin" style="display:none">Admin only</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="renderHistory()">↺</button>
+        </div>
+      </div>
+      <div id="adminHistoryNote" style="display:none" class="readonly-notice" style="margin-bottom:1rem">🔓 Admin entries visible — lock to hide</div>
+      <div id="historyList"></div>
+    </div>
+    <div id="tab-calendar" style="display:none">
+      <div class="section-hd"><div class="section-title">📅 Calendar</div><button class="btn btn-ghost btn-sm" onclick="refreshCalendar()">↺ Sync</button></div>
+      <div class="card" id="calFeedForm" style="display:none">
+        <div class="section-title" style="font-size:13px;margin-bottom:.75rem">Add iCal feed</div>
+        <div class="form-row">
+          <div class="form-col f1"><div class="form-label">Feed name</div><input type="text" id="calFeedName" placeholder="My Google Calendar"></div>
+          <div class="form-col f1"><div class="form-label">iCal URL</div><input type="text" id="calFeedUrl" placeholder="https://calendar.google.com/...ics"></div>
+          <div class="form-col"><div class="form-label">&nbsp;</div><button class="btn btn-primary" onclick="addCalFeed()">Add</button></div>
+        </div>
+        <div class="form-hint">💡 Google Calendar: Settings → your calendar → "Secret address in iCal format"</div>
+      </div>
+      <div class="section-hd" style="margin-top:.5rem"><div class="section-title" style="font-size:13px">Your feeds</div></div>
+      <div class="card" id="calFeedList"></div>
+      <div class="section-hd" style="margin-top:1rem"><div class="section-title">Today's events</div></div>
+      <div id="calEventList"><div class="empty"><div class="empty-icon">📅</div>No events today</div></div>
+    </div>
+    <div id="tab-manage" style="display:none">
+      <div class="card">
+        <div class="section-title" style="margin-bottom:.75rem">Add a chore</div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Chore name</div><input type="text" id="cName" placeholder="e.g. Make your bed"></div>
+          <div class="form-col w80"><div class="form-label">Points</div><input type="number" id="cPts" placeholder="10" min="1"></div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Group (optional)</div><select id="cGroupSel"><option value="">— No group —</option></select></div>
+          <div class="form-col f1"><div class="form-label">Or new group name</div><input type="text" id="cGroupNew" placeholder="Group name..."></div>
+        </div>
+        <div class="form-row"><button class="btn btn-primary" onclick="addChore()" style="margin-left:auto">Add chore</button></div>
+        <div class="form-hint">💡 All chores repeat daily automatically.</div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-bottom:.75rem">Add one-time task</div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Task name</div><input type="text" id="otName" placeholder="e.g. Clean garage"></div>
+          <div class="form-col w120"><div class="form-label">Date</div><input type="date" id="otDate"></div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col w80"><div class="form-label">Points</div><input type="number" id="otPts" placeholder="5" min="0"></div>
+          <div class="form-col f1"><div class="form-label">Priority</div><select id="otPriority"><option value="normal">Normal</option><option value="medium">⬆ Medium</option><option value="high">🔴 High</option></select></div>
+        </div>
+        <div class="form-row"><button class="btn btn-primary" onclick="addOneTimeTask()" style="margin-left:auto">Add task</button></div>
+      </div>
+      <div class="section-hd"><div class="section-title">All chores</div></div>
+      <div class="card" id="manageChoreList"></div>
+      <div class="section-hd" style="margin-top:1rem"><div class="section-title">One-time tasks</div></div>
+      <div class="card" id="manageOnetimeList"></div>
+      <div class="section-hd" style="margin-top:1rem"><div class="section-title">All rewards</div></div>
+      <div class="card" id="manageRewardList"></div>
+      <div class="section-hd" style="margin-top:1rem"><div class="section-title">👤 Users</div></div>
+      <div class="card">
+        <div class="section-title" style="font-size:13px;margin-bottom:.75rem">Add a user</div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Username</div><input type="text" id="uUsername" placeholder="username" autocapitalize="none"></div>
+          <div class="form-col f1"><div class="form-label">Password</div><input type="password" id="uPassword" placeholder="••••••"></div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">User type</div><select id="uType"><option value="chore">Chore user (daily tasks + points)</option><option value="task">Task scheduler (personal tasks)</option></select></div>
+        </div>
+        <div class="form-row"><button class="btn btn-primary" onclick="addUser()" style="margin-left:auto">Add user</button></div>
+      </div>
+      <div class="card" id="manageUserList"></div>
+      <div class="section-hd" style="margin-top:1rem"><div class="section-title">⚙️ Settings</div></div>
+      <div class="card">
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Daily target (pts)</div><div class="setting-desc">Minimum points needed each day</div></div><div class="setting-control"><input type="number" id="setTarget" min="1" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('dailyTarget','setTarget')">Save</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Penalty if missed (pts)</div><div class="setting-desc">Deducted at midnight if target not hit</div></div><div class="setting-control"><input type="number" id="setPenalty" min="0" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('penaltyPts','setPenalty')">Save</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Change parent PIN</div><div class="setting-desc">Default PIN is 1234</div></div><div class="setting-control"><button class="btn btn-sm btn-warning" onclick="showChangePinFlow()">Change PIN</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Adjust bank manually</div><div class="setting-desc">Positive to add, negative to deduct</div></div><div class="setting-control"><input type="number" id="adjustAmt" placeholder="±pts" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="adjustPoints()">Apply</button></div></div>
+      </div>
+      <div class="section-hd" style="margin-top:1rem"><div class="section-title" style="color:var(--danger)">Danger zone</div></div>
+      <div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-danger btn-sm" onclick="resetPoints()">Reset bank to 0</button>
+        <button class="btn btn-danger btn-sm" onclick="clearHistory()">Clear history</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAll()">Clear all data</button>
+      </div></div>
+    </div>
+  </div><!-- /choreShell -->
+  <!-- TASK SHELL -->
+  <div id="taskShell" style="display:none">
+    <div class="nav">
+      <button class="nav-btn active" id="tnav-tasks" onclick="showTaskTab('tasks')">📋 Tasks</button>
+      <button class="nav-btn" id="tnav-calendar" onclick="showTaskTab('calendar')">📅 Calendar</button>
+      <button class="nav-btn" id="tnav-settings" onclick="showTaskTab('settings')">⚙️ Settings</button>
+    </div>
+    <div id="ttab-tasks">
+      <div class="section-hd">
+        <div><div class="section-title">My Tasks</div><div class="section-sub" id="taskSub">All tasks</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <select id="taskSort" onchange="renderTaskList()" style="padding:6px 10px;font-size:12px;width:auto"><option value="priority">Priority</option><option value="date">Date added</option><option value="eta">ETA</option></select>
+          <select id="taskFilter" onchange="renderTaskList()" style="padding:6px 10px;font-size:12px;width:auto"><option value="all">All</option><option value="pending">Pending</option><option value="deferred">Deferred</option><option value="completed">Completed</option></select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="font-size:13px;margin-bottom:.75rem">Add a task</div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Task name</div><input type="text" id="tName" placeholder="e.g. Review documents"></div>
+          <div class="form-col f1"><div class="form-label">Priority</div><select id="tPriority"><option value="medium">Medium</option><option value="high">🔴 High</option><option value="low">🟢 Low</option></select></div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">ETA (due date)</div><input type="date" id="tEta"></div>
+          <div class="form-col f1"><div class="form-label">Description (optional)</div><input type="text" id="tDesc" placeholder="Notes..."></div>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <div class="form-col f1"><div class="form-label">Reminder</div><select id="tReminder"><option value="">None</option><option value="on-eta">On due date</option><option value="1day">1 day before</option><option value="2days">2 days before</option><option value="1week">1 week before</option></select></div>
+          <div class="form-col f1"><div class="form-label">Alarm time</div><input type="time" id="tAlarm"></div>
+        </div>
+        <div class="form-row"><button class="btn btn-primary" onclick="addTask()" style="margin-left:auto">Add task</button></div>
+      </div>
+      <div class="task-list" id="taskList"></div>
+      <div id="taskCalDashSection" style="display:none;margin-top:1.5rem">
+        <div class="section-hd"><div class="section-title">📅 Today's calendar</div></div>
+        <div id="taskCalDashList"></div>
+      </div>
+    </div>
+    <div id="ttab-calendar" style="display:none">
+      <div class="section-hd"><div class="section-title">📅 Calendar</div><button class="btn btn-ghost btn-sm" onclick="refreshCalendar()">↺ Sync</button></div>
+      <div class="card">
+        <div class="section-title" style="font-size:13px;margin-bottom:.75rem">Add iCal feed</div>
+        <div class="form-row">
+          <div class="form-col f1"><div class="form-label">Feed name</div><input type="text" id="tcalFeedName" placeholder="Work calendar"></div>
+          <div class="form-col f1"><div class="form-label">iCal URL</div><input type="text" id="tcalFeedUrl" placeholder="https://...ics"></div>
+          <div class="form-col"><div class="form-label">&nbsp;</div><button class="btn btn-primary" onclick="addCalFeedTask()">Add</button></div>
+        </div>
+        <div class="form-hint">💡 Google: Settings → calendar → "Secret address in iCal format"</div>
+      </div>
+      <div class="section-hd" style="margin-top:.5rem"><div class="section-title" style="font-size:13px">Your feeds</div></div>
+      <div class="card" id="tcalFeedList"></div>
+      <div class="section-hd" style="margin-top:1rem"><div class="section-title">Today's events</div></div>
+      <div id="tcalEventList"><div class="empty"><div class="empty-icon">📅</div>No events today</div></div>
+    </div>
+    <div id="ttab-settings" style="display:none">
+      <div class="section-hd"><div class="section-title">⚙️ Settings</div></div>
+      <div class="card">
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Change my password</div><div class="setting-desc">Update your login password</div></div><div class="setting-control"><button class="btn btn-sm btn-warning" onclick="selfChangePassword()">Change</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Notification sound</div><div class="setting-desc">Play sound for reminders and alarms</div></div><div class="setting-control"><select id="soundPref" onchange="saveSoundPref()" style="width:100px"><option value="on">On</option><option value="off">Off</option></select></div></div>
+      </div>
+    </div>
+  </div><!-- /taskShell -->
+</div><!-- /appShell -->
+<script>
+const DEFAULT_PIN='1234';
+const DEFAULT_STATE=()=>({points:0,chores:[],rewards:[],checked:{},history:[],adminLog:[],oneTimeTasks:[],calFeeds:[],tasks:[],users:[],settings:{dailyTarget:15,penaltyPts:5,pin:DEFAULT_PIN},lastResetDate:null});
+let S=DEFAULT_STATE(),parentUnlocked=false,activeTab='dashboard',activeTaskTab='tasks',saveTimer=null,currentUser=null;
+let tvSession={active:false,rewardId:null,startTime:null,intervalId:null};
+let alarmTimers=[],audioCtx=null;
+
+// ── AUDIO ──
+function getACtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playBeep(f=880,d=0.3,t='sine'){try{const c=getACtx(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type=t;o.frequency.value=f;g.gain.setValueAtTime(.4,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+d);o.start(c.currentTime);o.stop(c.currentTime+d);}catch(e){}}
+function playChime(){playBeep(880,.2);setTimeout(()=>playBeep(1100,.2),200);setTimeout(()=>playBeep(1320,.3),400);}
+function playAlarm(){for(let i=0;i<4;i++)setTimeout(()=>playBeep(660,.15,'square'),i*200);}
+function soundOn(){return(currentUser?.soundPref||'on')==='on';}
+
+// ── SERVER ──
+function setSyncDot(s){const e=document.getElementById('syncDot');if(!e)return;e.style.background={loading:'#f59e0b',ok:'#22c55e',err:'#ef4444'}[s]||'#22c55e';e.title={loading:'Syncing…',ok:'All saved',err:'Save failed'}[s]||'';}
+async function loadFromServer(){const r=await fetch('/data');if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j&&typeof j==='object')S=deepMerge(DEFAULT_STATE(),j);}
+function save(){clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,350);}
+async function flushSave(){setSyncDot('loading');try{const r=await fetch('/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)});if(!r.ok)throw new Error('HTTP '+r.status);setSyncDot('ok');}catch(e){setSyncDot('err');toast('⚠️ Save failed','err');}}
+async function deleteFromServer(){await fetch('/data',{method:'DELETE'});}
+
+// ── BOOT ──
+async function initApp(){
+  document.getElementById('offlineScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appShell').style.display='none';
+  try{setSyncDot('loading');await loadFromServer();setSyncDot('ok');}
+  catch(e){document.getElementById('offlineScreen').classList.remove('hidden');return;}
+  if(!S.users||S.users.length===0){
+    S.users=[];
+    const h=await sha256('cherry');
+    S.users.push({id:uid(),username:'maahira',passwordHash:h,role:'chore',createdAt:new Date().toISOString()});
+    await flushSave();
+  }
+  // Restore session from localStorage (survives page refresh)
+  try{
+    const saved=localStorage.getItem('chomp_session');
+    if(saved){
+      const sess=JSON.parse(saved);
+      const user=S.users.find(u=>u.id===sess.id);
+      if(user){
+        currentUser={id:user.id,username:user.username,role:user.role||'chore',soundPref:user.soundPref||'on'};
+        enterApp();
+        return;
+      }
+      localStorage.removeItem('chomp_session');
+    }
+  }catch(e){}
+  showLogin();
+}
+
+// ── UTILS ──
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const todayStr=()=>new Date().toLocaleDateString('en-CA');
+const fmtTime=()=>new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+const fmtDate=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});}catch(e){return d;}};
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+function deepMerge(t,s){const o={...t};for(const k in s){if(s[k]&&typeof s[k]==='object'&&!Array.isArray(s[k]))o[k]=deepMerge(t[k]||{},s[k]);else o[k]=s[k];}return o;}
+function groups(){return[...new Set(S.chores.filter(c=>c.group).map(c=>c.group))];}
+function groupChores(g){return S.chores.filter(c=>c.group===g);}
+function isGroupDone(g){const m=groupChores(g);return m.length>0&&m.every(c=>S.checked[c.id]);}
+function groupPts(g){return groupChores(g).reduce((s,c)=>s+c.pts,0);}
+function todayEarned(){
+  const solo=S.chores.filter(c=>!c.group&&S.checked[c.id]).reduce((s,c)=>s+c.pts,0);
+  const grp=groups().filter(g=>isGroupDone(g)).reduce((s,g)=>s+groupPts(g),0);
+  const ot=(S.oneTimeTasks||[]).filter(t=>t.date===todayStr()&&t.done).reduce((s,t)=>s+(t.pts||0),0);
+  return solo+grp+ot;
+}
+
+// ── AUTH ──
+async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('appShell').style.display='none';document.getElementById('loginUsername').value='';document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent='';setTimeout(()=>document.getElementById('loginUsername').focus(),100);}
+async function doLogin(){
+  const un=document.getElementById('loginUsername').value.trim().toLowerCase();
+  const pw=document.getElementById('loginPassword').value;
+  const err=document.getElementById('loginError');
+  if(!un||!pw){err.textContent='Please enter username and password';return;}
+  const h=await sha256(pw);
+  const user=S.users.find(u=>u.username.toLowerCase()===un&&u.passwordHash===h);
+  if(!user){err.textContent='Incorrect username or password';document.getElementById('loginPassword').value='';return;}
+  currentUser={id:user.id,username:user.username,role:user.role||'chore',soundPref:user.soundPref||'on'};
+  // Persist session — survives page refresh; cleared only on logout
+  try{localStorage.setItem('chomp_session',JSON.stringify({id:user.id}));}catch(e){}
+  enterApp();
+}
+function enterApp(){
+  // Parent unlock never persists across refresh — must re-enter PIN
+  parentUnlocked=false;
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appShell').style.display='';
+  document.getElementById('userAvatar').textContent=currentUser.username.slice(0,2).toUpperCase();
+  document.getElementById('userGreeting').textContent='Hey '+cap(currentUser.username)+'!';
+  if(currentUser.role==='task'){
+    document.getElementById('choreShell').style.display='none';
+    document.getElementById('taskShell').style.display='';
+    showTaskTab('tasks'); startReminderLoop(); refreshCalendar();
+  } else {
+    document.getElementById('choreShell').style.display='';
+    document.getElementById('taskShell').style.display='none';
+    midnightCheck(); scheduleNextMidnight(); updateBank(); renderDashboard(); updateLockUI(); refreshCalendar();
+  }
+}
+function doLogout(){
+  currentUser=null;parentUnlocked=false;
+  try{localStorage.removeItem('chomp_session');}catch(e){}
+  alarmTimers.forEach(clearTimeout);alarmTimers=[];
+  if(tvSession.active){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
+  showLogin();
+}
+async function addUser(){
+  const un=document.getElementById('uUsername').value.trim().toLowerCase();
+  const pw=document.getElementById('uPassword').value;
+  const role=document.getElementById('uType').value;
+  if(!un){toast('Enter username','err');return;}
+  if(!pw||pw.length<3){toast('Password min 3 chars','err');return;}
+  if(S.users.find(u=>u.username.toLowerCase()===un)){toast('Username exists','err');return;}
+  const h=await sha256(pw);
+  S.users.push({id:uid(),username:un,passwordHash:h,role,createdAt:new Date().toISOString()});
+  document.getElementById('uUsername').value='';document.getElementById('uPassword').value='';
+  logAdmin('user-add',`User added: "${un}"`,`role: ${role}`);
+  save();renderManage();toast(`User "${un}" (${role}) added!`,'ok');
+}
+async function changeUserPassword(id){
+  const p=prompt('New password:');if(!p||p.length<3){if(p!==null)toast('Too short','err');return;}
+  const u=S.users.find(x=>x.id===id);if(!u)return;u.passwordHash=await sha256(p);
+  logAdmin('user-pwd',`Password changed for "${u.username}"`,'');
+  save();toast(`Password updated for "${u.username}"`,'ok');
+}
+async function selfChangePassword(){
+  const p=prompt('New password:');if(!p||p.length<3){if(p!==null)toast('Too short','err');return;}
+  const u=S.users.find(x=>x.id===currentUser.id);if(!u)return;u.passwordHash=await sha256(p);save();toast('Password updated!','ok');
+}
+function removeUser(id){
+  const u=S.users.find(x=>x.id===id);if(!u)return;
+  if(S.users.length<=1){toast("Can't remove last user",'err');return;}
+  if(!confirm(`Remove "${u.username}"?`))return;
+  logAdmin('user-remove',`User removed: "${u.username}"`,`was ${u.role} user`);
+  S.users=S.users.filter(x=>x.id!==id);save();renderManage();toast(`Removed "${u.username}"`,'info');
+}
+function saveSoundPref(){
+  const v=document.getElementById('soundPref').value;currentUser.soundPref=v;
+  const u=S.users.find(x=>x.id===currentUser.id);if(u)u.soundPref=v;save();toast('Saved','ok');
+}
+
+// ── TOAST ──
+function toast(m,t='info'){const w=document.getElementById('toast-wrap'),el=document.createElement('div');el.className='toast '+({ok:'t-ok',err:'t-err',info:'t-info',warn:'t-warn'}[t]||'t-info');el.textContent=m;w.appendChild(el);setTimeout(()=>el.remove(),3000);}
+
+// ── HISTORY ──
+function getTodayHistory(){const d=todayStr();let h=S.history.find(x=>x.date===d);if(!h){h={date:d,entries:[],dailyEarned:0,dailySpent:0,penalty:0};S.history.unshift(h);}return h;}
+function logEntry(type,label,pts){
+  const h=getTodayHistory();
+  h.entries.push({type,label,pts,time:fmtTime()});
+  if(type==='chore'||type==='bonus')h.dailyEarned+=Math.max(0,pts);
+  if(type==='reward'||type==='penalty')h.dailySpent+=Math.abs(pts);
+  purgeOldHistory();
+  save();
+}
+// Admin log — only visible when parentUnlocked
+function logAdmin(type,label,detail=''){
+  if(!S.adminLog)S.adminLog=[];
+  S.adminLog.unshift({type,label,detail,date:todayStr(),time:fmtTime()});
+  // Keep max 30 days of admin entries too
+  purgeOldHistory();
+  save();
+}
+function purgeOldHistory(){
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
+  const cutoffStr=cutoff.toLocaleDateString('en-CA');
+  if(S.history)S.history=S.history.filter(h=>h.date>=cutoffStr);
+  if(S.adminLog)S.adminLog=S.adminLog.filter(e=>e.date>=cutoffStr);
+}
+
+// ── BANK ──
+function updateBank(){
+  const pts=S.points;
+  const el=document.getElementById('bankPts');
+  el.textContent=(pts<0?'−':'')+Math.abs(pts);
+  el.className='bank-pts '+(pts>0?'positive':pts<0?'negative':'zero');
+  document.getElementById('bankCard').className='bank-card'+(pts<0?' negative':'');
+  document.body.classList.toggle('danger-mode',pts<0);
+  const earned=todayEarned(),target=S.settings.dailyTarget,pct=Math.min(100,Math.round((earned/target)*100));
+  const bar=document.getElementById('targetBar');bar.style.width=pct+'%';bar.className='progress-fill'+(earned>=target?' hit':pts<0?' danger':'');
+  document.getElementById('targetLabel').innerHTML=`<strong>${earned}</strong> / ${target} pts`;
+  const done=S.chores.filter(c=>S.checked[c.id]).length,total=S.chores.length;
+  document.getElementById('bankProgress').innerHTML=total>0?`<strong>${done}</strong>/${total} done`:'No chores set up';
+  document.getElementById('bankSub').textContent=pts===0?'Start checking off chores!':pts>0?`${pts} pt${pts!==1?'s':''} saved up`:`${Math.abs(pts)} pt${Math.abs(pts)!==1?'s':''} in debt`;
+  document.getElementById('bankDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+}
+
+// ── PIN ──
+let pinBuffer='',pinCallback=null,pinMode='verify',pinNewTemp='';
+function requirePin(cb){pinBuffer='';pinCallback=cb;pinMode='verify';document.getElementById('pinModalTitle').textContent='🔒 Parent Access';document.getElementById('pinModalSub').textContent='Enter PIN';document.getElementById('pinError').textContent='';updatePinDots();document.getElementById('pinModal').classList.add('open');}
+function showChangePinFlow(){pinBuffer='';pinMode='verify';pinCallback=()=>{pinBuffer='';pinMode='set-new';document.getElementById('pinModalTitle').textContent='🔑 New PIN';document.getElementById('pinModalSub').textContent='Enter new PIN';document.getElementById('pinError').textContent='';updatePinDots();document.getElementById('pinModal').classList.add('open');};document.getElementById('pinModalTitle').textContent='🔒 Current PIN';document.getElementById('pinModalSub').textContent='Enter current PIN';document.getElementById('pinError').textContent='';updatePinDots();document.getElementById('pinModal').classList.add('open');}
+function pinKey(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updatePinDots();if(pinBuffer.length===4)setTimeout(checkPin,120);}
+function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updatePinDots();}
+function pinCancel(){document.getElementById('pinModal').classList.remove('open');pinBuffer='';}
+function updatePinDots(){for(let i=0;i<4;i++)document.getElementById('dot'+i).className='pin-dot'+(i<pinBuffer.length?' filled':'');}
+function pinError(){for(let i=0;i<4;i++)document.getElementById('dot'+i).className='pin-dot error';document.getElementById('pinError').textContent='Wrong PIN';setTimeout(()=>{pinBuffer='';updatePinDots();document.getElementById('pinError').textContent='';},700);}
+function getParentPin(){return String((S.settings&&S.settings.pin!=null)?S.settings.pin:DEFAULT_PIN);}
+function checkPin(){
+  if(pinMode==='verify'){
+    if(pinBuffer===getParentPin()){
+      document.getElementById('pinModal').classList.remove('open');
+      pinBuffer='';
+      if(pinCallback){const cb=pinCallback;pinCallback=null;cb();}
+    } else pinError();
+  }
+  else if(pinMode==='set-new'){pinNewTemp=pinBuffer;pinBuffer='';pinMode='confirm-new';document.getElementById('pinModalSub').textContent='Confirm new PIN';document.getElementById('pinError').textContent='';updatePinDots();}
+  else if(pinMode==='confirm-new'){
+    if(pinBuffer===pinNewTemp){
+      S.settings.pin=pinBuffer;logAdmin('setting-change','Parent PIN changed','');save();
+      document.getElementById('pinModal').classList.remove('open');pinBuffer='';pinMode='verify';toast('PIN updated!','ok');
+    } else {
+      document.getElementById('pinError').textContent="PINs don't match";pinBuffer='';pinNewTemp='';pinMode='set-new';
+      setTimeout(()=>{document.getElementById('pinModalSub').textContent='Enter new PIN';document.getElementById('pinError').textContent='';updatePinDots();},700);
+    }
+  }
+}
+
+// ── LOCK ──
+function handleLockToggle(){
+  if(parentUnlocked){
+    parentUnlocked=false;
+    updateLockUI();
+    if(activeTab==='manage')showTab('dashboard');
+    toast('Locked 🔒','info');
+  } else {
+    pinBuffer='';pinMode='verify';
+    pinCallback=()=>{
+      parentUnlocked=true;
+      updateLockUI();
+      const b=document.getElementById('lockBtn');
+      if(b){b.classList.add('just-unlocked');setTimeout(()=>b.classList.remove('just-unlocked'),450);}
+      toast('Unlocked ✓ — parent mode on','ok');
+    };
+    document.getElementById('pinModalTitle').textContent='🔒 Parent Access';
+    document.getElementById('pinModalSub').textContent='Enter PIN to unlock';
+    document.getElementById('pinError').textContent='';
+    updatePinDots();
+    document.getElementById('pinModal').classList.add('open');
+  }
+}
+function updateLockUI(){
+  const b=document.getElementById('lockBtn'),ic=document.getElementById('lockIcon');
+  const mn=document.getElementById('nav-manage'),rb=document.getElementById('resetDayBtn');
+  const adminOpt=document.getElementById('historyFilterAdmin');
+  const histFilter=document.getElementById('historyFilter');
+  if(parentUnlocked){
+    if(b){b.className='lock-btn unlocked';b.title='Click to lock';}
+    if(ic)ic.innerHTML='<rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-1"/>';
+    if(mn)mn.style.display='';if(rb)rb.style.display='';
+    if(adminOpt)adminOpt.style.display='';
+  } else {
+    if(b){b.className='lock-btn locked';b.title='Parent access';}
+    if(ic)ic.innerHTML='<rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>';
+    if(mn)mn.style.display='none';if(rb)rb.style.display='none';
+    if(adminOpt)adminOpt.style.display='none';
+    // Reset admin filter when locking so admin view can't stick
+    if(histFilter&&histFilter.value==='admin') histFilter.value='all';
+  }
+  if(activeTab==='rewards') renderRewardMode();
+  if(activeTab==='history') renderHistory();
+  if(activeTab==='calendar') renderCalendarTab();
+}
+
+// ── TABS ──
+function showTab(tab){
+  if(tab==='manage'&&!parentUnlocked){toast('Unlock parent access first 🔒','warn');return;}
+  ['dashboard','rewards','history','calendar','manage'].forEach(t=>{const e=document.getElementById('tab-'+t);if(e)e.style.display=t===tab?'':'none';const n=document.getElementById('nav-'+t);if(n)n.classList.toggle('active',t===tab);});
+  activeTab=tab;
+  if(tab==='dashboard')renderDashboard();
+  if(tab==='rewards'){renderRewardMode();renderTvTimer();}
+  if(tab==='history')renderHistory();
+  if(tab==='calendar')renderCalendarTab();
+  if(tab==='manage')renderManage();
+}
+function showTaskTab(tab){
+  ['tasks','calendar','settings'].forEach(t=>{const e=document.getElementById('ttab-'+t);if(e)e.style.display=t===tab?'':'none';const n=document.getElementById('tnav-'+t);if(n)n.classList.toggle('active',t===tab);});
+  activeTaskTab=tab;
+  if(tab==='tasks'){renderTaskList();renderTaskCalDash();}
+  if(tab==='calendar')renderTaskCalendarTab();
+  if(tab==='settings'){const sp=document.getElementById('soundPref');if(sp)sp.value=currentUser.soundPref||'on';}
+}
+
+// ── DASHBOARD (chore) ──
+const CHK_SVG='<svg width="12" height="12" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+function renderDashboard(){
+  const list=document.getElementById('choreList');
+  if(!S.chores.length){list.innerHTML='<div class="empty"><div class="empty-icon">📋</div>No chores yet — unlock Manage to add some!</div>';document.getElementById('dashSub').textContent='No chores set up';renderOneTimeTasks();renderCalDash();return;}
+  const grps=groups(),solos=S.chores.filter(c=>!c.group);let html='';
+  grps.forEach(g=>{
+    const members=groupChores(g),dc=members.filter(c=>S.checked[c.id]).length,tc=members.length,done=dc===tc,gp=groupPts(g),pct=tc>0?Math.round((dc/tc)*100):0;
+    html+=`<div class="chore-item group-head ${done?'done':''}"><div style="width:24px;height:24px;border-radius:50%;background:${done?'var(--success)':'var(--accent-light)'};border:2px solid ${done?'var(--success)':'var(--accent-border)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:${done?'#fff':'var(--accent)'};flex-shrink:0">${done?'✓':'G'}</div><div class="chore-body"><div class="chore-name">${esc(g)} <span class="tag tag-group">group</span></div><div class="chore-meta">${dc}/${tc} done · ${gp} pts when all complete</div><div class="progress-track-sm"><div class="progress-fill-sm ${done?'done':''}" style="width:${pct}%"></div></div></div><div class="pts-badge ${done?'earned':'locked'}">${done?'✓ ':'🔒 '}${gp}</div></div>`;
+    members.forEach(c=>{const ck=!!S.checked[c.id];html+=`<div class="chore-item group-child ${ck?'done':''}" onclick="toggleChore('${c.id}')"><div class="chore-check ${ck?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(c.name)}</div></div><div class="pts-badge locked">${c.pts}</div></div>`;});
+  });
+  solos.forEach(c=>{const ck=!!S.checked[c.id];html+=`<div class="chore-item ${ck?'done':''}" onclick="toggleChore('${c.id}')"><div class="chore-check ${ck?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(c.name)}</div><div class="chore-meta">Individual · ${c.pts} pts</div></div><div class="pts-badge ${ck?'earned':''}">${ck?'✓ ':'+'} ${c.pts}</div></div>`;});
+  list.innerHTML=html;
+  const dt=S.chores.filter(c=>S.checked[c.id]).length,all=S.chores.length;
+  document.getElementById('dashSub').textContent=dt===all&&all>0?'🎉 All done! Amazing work!':dt===0?'Tap a chore to mark it done':`${dt} of ${all} completed`;
+  renderOneTimeTasks();renderCalDash();
+}
+function renderOneTimeTasks(){
+  const today=todayStr(),tasks=(S.oneTimeTasks||[]).filter(t=>t.date===today),sec=document.getElementById('onetimeSection');
+  if(!tasks.length){sec.style.display='none';return;}
+  sec.style.display='';
+  const sorted=[...tasks].sort((a,b)=>({high:0,medium:1,normal:2}[a.priority]||2)-({high:0,medium:1,normal:2}[b.priority]||2));
+  document.getElementById('onetimeList').innerHTML=sorted.map(t=>{
+    const pl=t.priority==='high'?'<span class="pri pri-high">High</span>':t.priority==='medium'?'<span class="pri pri-medium">Medium</span>':'';
+    return `<div class="chore-item one-time ${t.priority==='high'?'priority-high':t.priority==='medium'?'priority-medium':''} ${t.done?'done':''}" onclick="toggleOneTime('${t.id}')"><div class="chore-check ${t.done?'checked':''}">${CHK_SVG}</div><div class="chore-body"><div class="chore-name">${esc(t.name)} ${pl}</div><div class="chore-meta">One-time · ${t.pts} pts</div></div><div class="pts-badge ${t.done?'earned':''}">${t.done?'✓ ':'+'} ${t.pts}</div></div>`;
+  }).join('');
+}
+
+// ── TOGGLE CHORE ──
+function toggleChore(id){
+  const c=S.chores.find(x=>x.id===id);if(!c)return;
+  const was=!!S.checked[id];
+  if(!c.group){
+    S.checked[id]=!was;S.points+=was?-c.pts:c.pts;
+    if(!was){logEntry('chore',c.name,c.pts);if(soundOn())playChime();}
+    else{const h=getTodayHistory();h.entries.push({type:'chore-undo',label:c.name+' (unchecked)',pts:-c.pts,time:fmtTime()});h.dailyEarned=Math.max(0,h.dailyEarned-c.pts);save();}
+    toast(`${was?'−':'+'}${c.pts} pts — ${c.name}`,was?'err':'ok');
+  } else {
+    const wasDone=isGroupDone(c.group);S.checked[id]=!was;const nowDone=isGroupDone(c.group);
+    if(!wasDone&&nowDone){S.points+=groupPts(c.group);logEntry('chore',`Group: ${c.group}`,groupPts(c.group));if(soundOn())playChime();toast(`Group "${c.group}" complete! +${groupPts(c.group)} pts 🎉`,'ok');}
+    else if(wasDone&&!nowDone){const gp=groupPts(c.group);S.points-=gp;const h=getTodayHistory();h.entries.push({type:'chore-undo',label:`Group: ${c.group} (incomplete)`,pts:-gp,time:fmtTime()});h.dailyEarned=Math.max(0,h.dailyEarned-gp);save();toast(`Group incomplete — −${gp} pts`,'err');}
+    else toast(was?'Unchecked':`Checked ✓ — finish all "${c.group}" for pts`,'info');
+  }
+  save();updateBank();renderDashboard();
+}
+function toggleOneTime(id){
+  const t=(S.oneTimeTasks||[]).find(x=>x.id===id);if(!t)return;
+  t.done=!t.done;
+  if(t.done){S.points+=t.pts;logEntry('chore',`📌 ${t.name}`,t.pts);if(soundOn())playChime();toast(`+${t.pts} pts — ${t.name}`,'ok');}
+  else{S.points-=t.pts;const h=getTodayHistory();h.entries.push({type:'chore-undo',label:`📌 ${t.name} (unchecked)`,pts:-t.pts,time:fmtTime()});h.dailyEarned=Math.max(0,h.dailyEarned-t.pts);save();toast(`−${t.pts} pts`,'err');}
+  save();updateBank();renderDashboard();
+}
+
+// ── CHORE MANAGEMENT ──
+function addChore(){
+  const name=document.getElementById('cName').value.trim(),pts=parseInt(document.getElementById('cPts').value);
+  const gs=document.getElementById('cGroupSel').value,gn=document.getElementById('cGroupNew').value.trim();
+  if(!name){toast('Enter chore name','err');return;}if(!pts||pts<1){toast('Enter valid pts','err');return;}
+  S.chores.push({id:uid(),name,pts,group:gn||gs||null});
+  document.getElementById('cName').value='';document.getElementById('cPts').value='';document.getElementById('cGroupNew').value='';document.getElementById('cGroupSel').value='';
+  logAdmin('chore-add',`Chore added: "${name}"`,`${pts} pts${(gn||gs)?`, group: ${gn||gs}`:''}`);
+  save();renderManage();refreshGroupSelect();toast(`"${name}" added!`,'ok');
+}
+function removeChore(id){
+  if(!confirm('Remove this chore?'))return;
+  const c=S.chores.find(x=>x.id===id);
+  if(c&&S.checked[id]){if(!c.group)S.points-=c.pts;else if(isGroupDone(c.group))S.points-=groupPts(c.group);}
+  logAdmin('chore-remove',`Chore removed: "${c?c.name:'unknown'}"`,`was ${c?c.pts:0} pts`);
+  delete S.checked[id];S.chores=S.chores.filter(x=>x.id!==id);
+  save();updateBank();renderManage();refreshGroupSelect();if(activeTab==='dashboard')renderDashboard();toast('Chore removed','info');
+}
+function refreshGroupSelect(){const s=document.getElementById('cGroupSel');if(!s)return;s.innerHTML='<option value="">— No group —</option>';groups().forEach(g=>s.innerHTML+=`<option value="${esc(g)}">${esc(g)}</option>`);}
+function addOneTimeTask(){
+  const name=document.getElementById('otName').value.trim(),date=document.getElementById('otDate').value;
+  const pts=parseInt(document.getElementById('otPts').value)||0,pri=document.getElementById('otPriority').value;
+  if(!name){toast('Enter task name','err');return;}if(!date){toast('Select a date','err');return;}
+  if(!S.oneTimeTasks)S.oneTimeTasks=[];
+  S.oneTimeTasks.push({id:uid(),name,date,pts,priority:pri,done:false});
+  document.getElementById('otName').value='';document.getElementById('otDate').value='';document.getElementById('otPts').value='';
+  logAdmin('onetime-add',`One-time task added: "${name}"`,`date: ${fmtDate(date)}, ${pts} pts, priority: ${pri}`);
+  save();renderManage();toast(`Task added for ${fmtDate(date)}`,'ok');
+}
+function removeOneTimeTask(id){if(!confirm('Remove?'))return;const t=(S.oneTimeTasks||[]).find(x=>x.id===id);logAdmin('onetime-remove',`One-time task removed: "${t?t.name:'unknown'}"`,t?`was for ${fmtDate(t.date)}`:'');S.oneTimeTasks=(S.oneTimeTasks||[]).filter(x=>x.id!==id);save();renderManage();toast('Task removed','info');}
+
+// ── REWARDS ──
+const EMOJIS=['🎬','🍕','🎮','🧁','📚','🎪','🛍️','🎵','🏖️','🎠','🎡','🎢','🍦','🎈','🌟','🎯','🏆','🎭'];
+function onRewardTypeChange(){const isT=document.getElementById('rType').value==='timer';document.getElementById('rStandardFields').style.display=isT?'none':'';document.getElementById('rTimerFields').style.display=isT?'':'none';}
+function addReward(){
+  const name=document.getElementById('rName').value.trim(),type=document.getElementById('rType').value;
+  const redeemType=document.getElementById('rRedeemType').value||'persistent';
+  if(!name){toast('Enter reward name','err');return;}
+  let r={id:uid(),name,type:type||'standard',redeemType,cost:0,timesUsed:0};
+  if(type==='timer'){const p=parseFloat(document.getElementById('rTimerPts').value),h=parseFloat(document.getElementById('rTimerHours').value);if(!p||p<=0){toast('Enter pts','err');return;}if(!h||h<=0){toast('Enter hours','err');return;}r.timerPts=p;r.timerHours=h;}
+  else{const c=parseInt(document.getElementById('rCost').value);if(!c||c<1){toast('Enter pts','err');return;}r.cost=c;}
+  S.rewards.push(r);
+  document.getElementById('rName').value='';document.getElementById('rCost').value='';document.getElementById('rTimerPts').value='';document.getElementById('rTimerHours').value='';document.getElementById('rType').value='standard';document.getElementById('rRedeemType').value='persistent';onRewardTypeChange();
+  logAdmin('reward-add',`Reward added: "${name}"`,`type: ${type}, redemption: ${redeemType}, ${type==='timer'?`${r.timerPts}pts/${r.timerHours}hr`:r.cost+' pts'}`);
+  save();renderRewards();renderManage();toast(`"${name}" added! (${redeemType})`,'ok');
+}
+function removeReward(id){
+  if(!confirm('Remove?'))return;
+  const r=S.rewards.find(x=>x.id===id);
+  if(tvSession.active&&tvSession.rewardId===id){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
+  logAdmin('reward-remove',`Reward removed: "${r?r.name:'unknown'}"`,r?`was ${r.type==='timer'?r.timerPts+'pts/'+r.timerHours+'hr':r.cost+' pts'}, ${r.redeemType||'persistent'}, used ${r.timesUsed||0}×`:'');
+  S.rewards=S.rewards.filter(x=>x.id!==id);save();renderRewards();renderManage();toast('Removed','info');
+}
+function saveTimerRate(id){const r=S.rewards.find(x=>x.id===id);if(!r)return;const p=parseFloat(document.getElementById('tpts-'+id).value),h=parseFloat(document.getElementById('thrs-'+id).value);if(!p||p<=0||!h||h<=0){toast('Invalid values','err');return;}logAdmin('reward-edit',`Timer rate updated: "${r.name}"`,`${r.timerPts}pts/${r.timerHours}hr → ${p}pts/${h}hr`);r.timerPts=p;r.timerHours=h;save();renderRewards();toast('Rate updated!','ok');}
+function getPendingChores(){const r=[];S.chores.filter(c=>!c.group&&!S.checked[c.id]).forEach(c=>r.push({name:c.name,pts:c.pts}));groups().forEach(g=>{if(!isGroupDone(g)){const rem=groupChores(g).filter(c=>!S.checked[c.id]).length;r.push({name:`${g} (group — ${rem} left)`,pts:groupPts(g)});}});return r;}
+function insufficientHTML(needed){const s=[...getPendingChores()].sort((a,b)=>b.pts-a.pts);const sg=[];let run=0;for(const c of s){if(run>=needed)break;sg.push(c);run+=c.pts;}const rows=sg.map(c=>`<div class="insuf-chore"><span>${esc(c.name)}</span><span class="insuf-chore-pts">+${c.pts}</span></div>`).join('');return `<div class="insuf-card"><div class="insuf-title">😬 Not enough points!</div><div class="insuf-gap">Need <strong>${needed} more</strong> — complete these:</div><div class="insuf-chore-list">${rows||'<div style="font-size:13px;color:var(--text-muted)">No pending chores</div>'}</div></div>`;}
+function redeemReward(id){
+  const r=S.rewards.find(x=>x.id===id);if(!r)return;
+  if(r.type==='timer'){startTimerSession(id);return;}
+  const gap=r.cost-S.points;
+  if(gap>0){const el=document.getElementById('insuf-'+id);if(el){const open=el.style.display!=='none';el.innerHTML=open?'':insufficientHTML(gap);el.style.display=open?'none':'';}return;}
+  if(!confirm(`Use "${r.name}" for ${r.cost} pts?`))return;
+  S.points-=r.cost;
+  r.timesUsed=(r.timesUsed||0)+1;
+  r.lastUsed=todayStr();
+  // Log with reward name and type
+  logEntry('reward',r.name,-r.cost);
+  // One-time: remove after use
+  if(r.redeemType==='onetime'){
+    S.rewards=S.rewards.filter(x=>x.id!==id);
+    if(tvSession.active&&tvSession.rewardId===id){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
+  }
+  save();updateBank();renderRewards();if(soundOn())playChime();
+  toast(S.points<0?'Redeemed — balance negative!':`${r.redeemType==='onetime'?'🎉 One-time reward used!':'🎉 Enjoyed '+r.name+'!'}`,'ok');
+}
+function startTimerSession(id){
+  if(tvSession.active){toast('A timer is already running','warn');return;}
+  const r=S.rewards.find(x=>x.id===id);if(!r)return;
+  if(S.points<=0&&!confirm(`Bank is ${S.points}pts — continue?`))return;
+  tvSession={active:true,rewardId:id,startTime:Date.now(),intervalId:setInterval(renderTvTimer,1000)};
+  renderTvTimer();renderRewards();toast(`⏱ "${r.name}" started!`,'info');
+  document.getElementById('tvTimerSection').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function stopTimerSession(){
+  if(!tvSession.active)return;clearInterval(tvSession.intervalId);
+  const r=S.rewards.find(x=>x.id===tvSession.rewardId),elapsed=(Date.now()-tvSession.startTime)/1000;
+  const pps=r?(r.timerPts/(r.timerHours*3600)):(10/3600),pd=Math.ceil(elapsed*pps);
+  const ts=Math.floor(elapsed/60)>0?`${Math.floor(elapsed/60)}m ${Math.floor(elapsed%60)}s`:`${Math.floor(elapsed)}s`;
+  if(pd>0){S.points-=pd;logEntry('reward',`⏱ ${r?r.name:'Timer'} — ${ts}`,-pd);}
+  if(r){r.timesUsed=(r.timesUsed||0)+1;r.lastUsed=todayStr();}
+  const wasOneTime=r?.redeemType==='onetime';
+  const rewardId=tvSession.rewardId;
+  tvSession={active:false,rewardId:null,startTime:null,intervalId:null};
+  if(wasOneTime) S.rewards=S.rewards.filter(x=>x.id!==rewardId);
+  save();updateBank();renderTvTimer();renderRewards();toast(`⏹ ${ts} — ${pd>0?pd+' pts deducted':'no pts'}${wasOneTime?' · one-time reward used':''}`,pd>0?'warn':'ok');
+}
+function cancelTimerSession(){if(!tvSession.active)return;if(!confirm('Cancel? No pts deducted.'))return;clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};renderTvTimer();renderRewards();toast('Cancelled','info');}
+function fmtElapsed(ms){const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60;if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
+function renderTvTimer(){const el=document.getElementById('tvTimerSection');if(!el)return;if(!tvSession.active){el.innerHTML='';return;}const elapsed=Date.now()-tvSession.startTime,r=S.rewards.find(x=>x.id===tvSession.rewardId),pps=r?(r.timerPts/(r.timerHours*3600)):(10/3600),pu=(elapsed/1000)*pps;el.innerHTML=`<div class="tv-card"><div class="tv-card-label">⏱ Running — ${esc(r?r.name:'Timer')}</div><div class="tv-timer-display">${fmtElapsed(elapsed)}</div><div class="tv-pts-rate">Using <strong>${pu.toFixed(1)} pts</strong> · ${r?r.timerPts+' pts/'+r.timerHours+'hr':'—'}</div><div class="tv-controls"><button class="tv-btn tv-btn-stop" onclick="stopTimerSession()">⏹ Stop & Save</button><button class="tv-btn tv-btn-cancel" onclick="cancelTimerSession()">✕ Cancel</button></div><div class="tv-session-info">Rounded up to nearest whole point</div></div>`;}
+function renderRewardMode(){const n=document.getElementById('rewardsLockedNotice'),f=document.getElementById('rewardsAddForm');if(n)n.style.display=parentUnlocked?'none':'';if(f)f.style.display=parentUnlocked?'':'none';renderRewards();renderTvTimer();}
+function renderRewards(){
+  const list=document.getElementById('rewardList');if(!list)return;
+  if(!S.rewards.length){list.innerHTML=`<div class="empty"><div class="empty-icon">🎁</div>${parentUnlocked?'No rewards yet':'No rewards added yet'}</div>`;return;}
+  list.innerHTML=S.rewards.map((r,i)=>{
+    const isT=r.type==='timer',canA=isT||S.points>=r.cost,isR=tvSession.active&&tvSession.rewardId===r.id;
+    const isPersistent=!r.redeemType||r.redeemType==='persistent';
+    const rs=isT?`${r.timerPts} pts/${r.timerHours}hr`:'';
+    const usedCount=r.timesUsed||0;
+    let act='';
+    if(parentUnlocked)act=isT?`<button class="btn btn-sm" style="background:#1a1a2e;color:#e94560;border-color:#e94560" onclick="startTimerSession('${r.id}')" ${isR?'disabled':''}>⏱ ${isR?'Running':'Start'}</button><button class="btn btn-danger btn-sm btn-icon" onclick="removeReward('${r.id}')">✕</button>`:`<button class="btn btn-success btn-sm" onclick="redeemReward('${r.id}')">✓ Use</button><button class="btn btn-danger btn-sm btn-icon" onclick="removeReward('${r.id}')">✕</button>`;
+    else act=isT?`<button class="btn btn-sm" style="background:#1a1a2e;color:#e94560;border-color:#e94560" onclick="startTimerSession('${r.id}')" ${isR?'disabled':''}>⏱ ${isR?'Running':'Start'}</button>`:canA?`<button class="btn btn-success btn-sm" onclick="redeemReward('${r.id}')">✓ Use it!</button>`:`<button class="btn btn-warning btn-sm" onclick="redeemReward('${r.id}')">😬 ${r.cost-S.points} pts short</button>`;
+    const re=(isT&&parentUnlocked)?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text-muted);font-weight:600">Rate:</span><input type="number" id="tpts-${r.id}" value="${r.timerPts}" min="1" style="width:54px;padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)"><span style="font-size:11px;color:var(--text-muted)">pts per</span><input type="number" id="thrs-${r.id}" value="${r.timerHours}" min="0.25" step="0.25" style="width:54px;padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:var(--radius-sm)"><span style="font-size:11px;color:var(--text-muted)">hr</span><button class="btn btn-sm btn-primary" style="padding:4px 10px;font-size:11px" onclick="saveTimerRate('${r.id}')">Save</button></div>`:'';
+    // type badges row
+    const typeBadge=isT?`<span class="reward-type-badge rtb-timer">⏱ ${rs}</span>${isR?' <span style="font-size:11px;color:#e94560;font-weight:700">● LIVE</span>':''}`:`${r.cost} pts`;
+    const redeemBadge=isPersistent?'<span class="reward-type-badge rtb-persistent">♻️ Persistent</span>':'<span class="reward-type-badge rtb-onetime">1️⃣ One-time</span>';
+    const usedLine=usedCount>0?`<div class="reward-used-count">Used ${usedCount} time${usedCount!==1?'s':''}${r.lastUsed?' · last '+fmtDate(r.lastUsed):''}</div>`:'';
+    return `<div class="reward-item" style="${isR?'border-color:#e94560;background:#fff8f8':''}">
+      <div class="reward-emoji">${isT?'⏱':EMOJIS[i%EMOJIS.length]}</div>
+      <div class="reward-body">
+        <div class="reward-name">${esc(r.name)}</div>
+        <div class="reward-cost" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px">${typeBadge} ${redeemBadge}</div>
+        ${usedLine}
+        ${re}
+      </div>
+      <div class="reward-actions" style="flex-direction:column;align-items:flex-end;gap:6px">
+        <div style="display:flex;gap:6px">${act}</div>
+      </div>
+    </div>
+    <div id="insuf-${r.id}" style="display:none;margin-top:-4px;margin-bottom:4px"></div>`;
+  }).join('');
+}
+
+// ── HISTORY ──
+const TYPE_ICON={chore:'✅','chore-undo':'↩️',reward:'🎁',penalty:'⚠️',bonus:'⭐',reset:'🔄',reminder:'🔔','reminder-missed':'⏰'};
+const TYPE_LABEL={chore:'Chore done','chore-undo':'Chore undone',reward:'Reward redeemed',penalty:'Penalty',bonus:'Points adjusted',reset:'Day reset',reminder:'Reminder sent','reminder-missed':'Overdue task'};
+const TYPE_CSS={chore:'hi-chore','chore-undo':'hi-reset',reward:'hi-reward',penalty:'hi-penalty',bonus:'hi-bonus',reset:'hi-reset',reminder:'hi-bonus','reminder-missed':'hi-penalty'};
+// Admin log types
+const ADMIN_ICON={'chore-add':'➕','chore-edit':'✏️','chore-remove':'🗑️','reward-add':'🎁','reward-edit':'✏️','reward-remove':'🗑️','onetime-add':'📌','onetime-remove':'🗑️','user-add':'👤','user-remove':'👤','user-pwd':'🔑','setting-change':'⚙️','calendar-add':'📅','calendar-remove':'📅'};
+const ADMIN_LABEL={'chore-add':'Chore added','chore-edit':'Chore edited','chore-remove':'Chore removed','reward-add':'Reward added','reward-edit':'Reward edited','reward-remove':'Reward removed','onetime-add':'Task added','onetime-remove':'Task removed','user-add':'User added','user-remove':'User removed','user-pwd':'Password changed','setting-change':'Setting changed','calendar-add':'Calendar added','calendar-remove':'Calendar removed'};
+
+function renderHistory(){
+  const el=document.getElementById('historyList');if(!el)return;
+  const histFilter=document.getElementById('historyFilter');
+  let filter=histFilter?.value||'all';
+  // Never allow admin-only filter while locked
+  if(filter==='admin'&&!parentUnlocked){
+    filter='all';
+    if(histFilter) histFilter.value='all';
+  }
+  const adminNote=document.getElementById('adminHistoryNote');
+  if(adminNote)adminNote.style.display=parentUnlocked?'':'none';
+  const adminOpt=document.getElementById('historyFilterAdmin');
+  if(adminOpt)adminOpt.style.display=parentUnlocked?'':'none';
+
+  // Build a combined day-keyed map
+  const dayMap={};
+  // Activity entries
+  (S.history||[]).forEach(day=>{
+    if(!dayMap[day.date])dayMap[day.date]={date:day.date,entries:[],adminEntries:[],dailyEarned:day.dailyEarned,dailySpent:day.dailySpent,penalty:day.penalty||0};
+    else{dayMap[day.date].dailyEarned=day.dailyEarned;dayMap[day.date].dailySpent=day.dailySpent;dayMap[day.date].penalty=day.penalty||0;}
+    (day.entries||[]).forEach(e=>dayMap[day.date].entries.push(e));
+  });
+  // Admin log entries — only when parent PIN unlocked
+  if(parentUnlocked){
+    (S.adminLog||[]).forEach(e=>{
+      if(!dayMap[e.date])dayMap[e.date]={date:e.date,entries:[],adminEntries:[],dailyEarned:0,dailySpent:0,penalty:0};
+      dayMap[e.date].adminEntries.push(e);
+    });
+  }
+
+  const days=Object.values(dayMap).sort((a,b)=>b.date.localeCompare(a.date));
+
+  // Apply filter
+  const filtered=days.map(day=>{
+    let entries=day.entries.slice();
+    // Always empty admin list when locked (defense in depth)
+    let adminEntries=parentUnlocked?day.adminEntries.slice():[];
+    if(filter==='chore') entries=entries.filter(e=>e.type==='chore'||e.type==='chore-undo');
+    else if(filter==='reward') entries=entries.filter(e=>e.type==='reward');
+    else if(filter==='penalty') entries=entries.filter(e=>e.type==='penalty');
+    else if(filter==='admin'){entries=[];}
+    return {...day,entries,adminEntries};
+  }).filter(day=>day.entries.length>0||day.adminEntries.length>0);
+
+  // Update subtitle
+  const sub=document.getElementById('historySub');
+  if(sub) sub.textContent=`Last 30 days · ${days.length} day${days.length!==1?'s':''} of data`;
+
+  if(!filtered.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📜</div>No history yet — start completing chores!</div>';return;
+  }
+
+  el.innerHTML=filtered.map((day,di)=>{
+    const net=day.dailyEarned-day.dailySpent-day.penalty;
+    // Rewards summary
+    const rewardEntries=day.entries.filter(e=>e.type==='reward');
+    let rewardsSummary='';
+    if(rewardEntries.length&&filter!=='chore'&&filter!=='penalty'&&filter!=='admin'){
+      const totalSpent=rewardEntries.reduce((s,e)=>s+Math.abs(e.pts),0);
+      const rows=rewardEntries.map(e=>`<div class="history-reward-row"><span class="history-reward-name">🎁 ${esc(e.label)}</span><span class="history-reward-pts">−${Math.abs(e.pts)} pts</span></div>`).join('');
+      rewardsSummary=`<div class="history-rewards-summary"><div class="history-rewards-title">🎁 ${rewardEntries.length} reward${rewardEntries.length!==1?'s':''} claimed · ${totalSpent} pts spent</div>${rows}</div>`;
+    }
+    // Activity entries HTML
+    const actHTML=day.entries.map(e=>`<div class="history-entry">
+      <div class="history-entry-icon ${TYPE_CSS[e.type]||'hi-chore'}">${TYPE_ICON[e.type]||'•'}</div>
+      <div class="history-entry-body"><div class="history-entry-name">${esc(e.label)}</div><div class="history-entry-time">${e.time} · ${TYPE_LABEL[e.type]||e.type}</div></div>
+      <div class="history-entry-pts ${e.pts>=0?'pos':'neg'}">${e.pts!==0?(e.pts>=0?'+':'')+e.pts+' pts':''}</div>
+    </div>`).join('');
+    // Admin entries HTML
+    const admHTML=day.adminEntries.map(e=>`<div class="history-entry admin-entry">
+      <div class="history-entry-icon hi-admin" style="font-size:14px">${ADMIN_ICON[e.type]||'⚙️'}</div>
+      <div class="history-entry-body">
+        <div class="history-entry-name">${esc(e.label)} <span class="admin-badge">ADMIN</span></div>
+        <div class="history-entry-time">${e.time} · ${ADMIN_LABEL[e.type]||e.type}${e.detail?` · ${esc(e.detail)}`:''}</div>
+      </div>
+      <div></div>
+    </div>`).join('');
+    const adminCount=day.adminEntries.length;
+    return `<div class="history-day">
+      <div class="history-day-hd" onclick="toggleHDay(${di})">
+        <div>
+          <div class="history-day-title">${fmtDate(day.date)}</div>
+          <div class="history-day-summary">Earned ${day.dailyEarned} · Spent ${day.dailySpent}${day.penalty?` · Penalty ${day.penalty}`:''}${rewardEntries.length?` · ${rewardEntries.length} reward${rewardEntries.length!==1?'s':''} claimed`:''}</div>
+          ${adminCount>0&&parentUnlocked?`<div class="history-day-admin-count">🔓 ${adminCount} admin action${adminCount!==1?'s':''}</div>`:''}
+        </div>
+        <div class="history-day-pts ${net>=0?'pos':'neg'}">${net>=0?'+':''}${net} pts</div>
+      </div>
+      <div class="history-entries ${di===0?'open':''}" id="hday-${di}">
+        ${rewardsSummary}
+        ${actHTML||(!admHTML?'<div class="history-entry" style="color:var(--text-hint)">No activity entries</div>':'')}
+        ${admHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleHDay(i){document.getElementById('hday-'+i).classList.toggle('open');}
+
+// ── CALENDAR ──
+function userCalFeeds(){return(S.calFeeds||[]).filter(f=>f.userId===currentUser.id);}
+function calColor(i){return['#6c47e8','#16a34a','#d97706','#dc2626','#0891b2'][i%5];}
+function addCalFeed(){
+  const name=document.getElementById('calFeedName').value.trim(),url=document.getElementById('calFeedUrl').value.trim();
+  if(!name){toast('Enter feed name','err');return;}if(!url||!url.startsWith('http')){toast('Enter valid URL','err');return;}
+  if(!S.calFeeds)S.calFeeds=[];
+  S.calFeeds.push({id:uid(),name,url,color:calColor(S.calFeeds.length),userId:currentUser.id,events:[]});
+  document.getElementById('calFeedName').value='';document.getElementById('calFeedUrl').value='';
+  logAdmin('calendar-add',`Calendar feed added: "${name}"`,url.slice(0,60)+'...');
+  save();renderCalendarTab();refreshCalendar();toast('Calendar feed added!','ok');
+}
+function addCalFeedTask(){
+  const name=document.getElementById('tcalFeedName').value.trim(),url=document.getElementById('tcalFeedUrl').value.trim();
+  if(!name){toast('Enter feed name','err');return;}if(!url||!url.startsWith('http')){toast('Enter valid URL','err');return;}
+  if(!S.calFeeds)S.calFeeds=[];
+  S.calFeeds.push({id:uid(),name,url,color:calColor(S.calFeeds.length),userId:currentUser.id,events:[]});
+  document.getElementById('tcalFeedName').value='';document.getElementById('tcalFeedUrl').value='';
+  logAdmin('calendar-add',`Calendar feed added: "${name}"`,url.slice(0,60)+'...');
+  save();renderTaskCalendarTab();refreshCalendar();toast('Calendar feed added!','ok');
+}
+function removeCalFeed(id){
+  if(!confirm('Remove calendar feed?'))return;
+  const f=(S.calFeeds||[]).find(x=>x.id===id);
+  logAdmin('calendar-remove',`Calendar feed removed: "${f?f.name:'unknown'}"`,f?f.url.slice(0,60):'');
+  S.calFeeds=(S.calFeeds||[]).filter(x=>x.id!==id);save();renderCalendarTab();renderTaskCalendarTab();toast('Feed removed','info');
+}
+async function refreshCalendar(){
+  const feeds=userCalFeeds();if(!feeds.length)return;
+  for(const feed of feeds){
+    try{const res=await fetch('/ical-proxy?url='+encodeURIComponent(feed.url));if(!res.ok)continue;feed.events=parseIcal(await res.text());}
+    catch(e){console.warn('ical',e.message);}
+  }
+  save();renderCalDash();renderTaskCalDash();
+  if(activeTab==='calendar')renderCalendarTab();
+  if(activeTaskTab==='calendar')renderTaskCalendarTab();
+}
+function parseIcal(text){
+  const events=[],lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');let ev=null;
+  for(const raw of lines){const l=raw.trim();
+    if(l==='BEGIN:VEVENT'){ev={};}
+    else if(l==='END:VEVENT'){if(ev&&ev.summary)events.push(ev);ev=null;}
+    else if(ev){
+      if(l.startsWith('SUMMARY'))ev.summary=l.split(':').slice(1).join(':').trim();
+      else if(l.startsWith('DTSTART'))ev.start=parseIcalDate(l);
+      else if(l.startsWith('DTEND'))ev.end=parseIcalDate(l);
+      else if(l.startsWith('LOCATION'))ev.location=l.split(':').slice(1).join(':').trim();
+    }
+  }
+  return events;
+}
+function parseIcalDate(line){const v=line.split(':').slice(1).join(':').trim(),d=v.replace(/[TZ]/g,'').slice(0,8);if(d.length<8)return null;return`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;}
+function getTodayEvents(){const today=todayStr(),feeds=userCalFeeds(),all=[];feeds.forEach(f=>(f.events||[]).filter(e=>e.start===today).forEach(e=>all.push({...e,feedName:f.name,color:f.color})));return all;}
+function calEventHTML(events){return events.map(e=>`<div class="cal-event"><div class="cal-dot" style="background:${e.color}"></div><div class="cal-event-body"><div class="cal-event-title">${esc(e.summary)}</div><div class="cal-event-time">${esc(e.feedName)}${e.location?' · '+esc(e.location):''}</div></div></div>`).join('');}
+function renderCalDash(){const sec=document.getElementById('calDashSection'),list=document.getElementById('calDashList');if(!sec||!list)return;const ev=getTodayEvents();if(!ev.length){sec.style.display='none';return;}sec.style.display='';list.innerHTML=calEventHTML(ev);}
+function renderTaskCalDash(){const sec=document.getElementById('taskCalDashSection'),list=document.getElementById('taskCalDashList');if(!sec||!list)return;const ev=getTodayEvents();if(!ev.length){sec.style.display='none';return;}sec.style.display='';list.innerHTML=calEventHTML(ev);}
+function calFeedListHTML(feeds,canRemove){if(!feeds.length)return'<div class="empty" style="padding:1rem">No feeds yet — add an iCal URL above</div>';return feeds.map(f=>`<div class="cal-feed-item"><div class="cal-dot" style="background:${f.color};width:12px;height:12px;border-radius:50%;flex-shrink:0"></div><div class="cal-feed-body"><div class="cal-feed-name">${esc(f.name)}</div><div class="cal-feed-url">${esc(f.url)}</div></div>${canRemove?`<button class="btn btn-danger btn-sm btn-icon" onclick="removeCalFeed('${f.id}')">✕</button>`:''}</div>`).join('');}
+function renderCalendarTab(){
+  const feeds=userCalFeeds();
+  const cf=document.getElementById('calFeedForm');if(cf)cf.style.display=parentUnlocked?'':'none';
+  const fl=document.getElementById('calFeedList');if(fl)fl.innerHTML=calFeedListHTML(feeds,parentUnlocked);
+  const ev=getTodayEvents(),el=document.getElementById('calEventList');
+  if(el)el.innerHTML=ev.length?calEventHTML(ev):'<div class="empty"><div class="empty-icon">📅</div>No events today</div>';
+}
+function renderTaskCalendarTab(){
+  const feeds=userCalFeeds();
+  const fl=document.getElementById('tcalFeedList');if(fl)fl.innerHTML=calFeedListHTML(feeds,true);
+  const ev=getTodayEvents(),el=document.getElementById('tcalEventList');
+  if(el)el.innerHTML=ev.length?calEventHTML(ev):'<div class="empty"><div class="empty-icon">📅</div>No events today</div>';
+}
+
+// ── TASK USER ──
+const PRI_ORDER={high:0,medium:1,low:2};
+function myTasks(){return(S.tasks||[]).filter(t=>t.userId===currentUser.id);}
+function addTask(){
+  const name=document.getElementById('tName').value.trim();if(!name){toast('Enter task name','err');return;}
+  const eta=document.getElementById('tEta').value;
+  const task={id:uid(),userId:currentUser.id,name,desc:document.getElementById('tDesc').value.trim(),priority:document.getElementById('tPriority').value||'medium',status:'pending',dateAdded:todayStr(),eta:eta||null,reminder:document.getElementById('tReminder').value||'',alarm:document.getElementById('tAlarm').value||'',completedAt:null};
+  if(!S.tasks)S.tasks=[];S.tasks.push(task);
+  document.getElementById('tName').value='';document.getElementById('tDesc').value='';document.getElementById('tEta').value='';document.getElementById('tReminder').value='';document.getElementById('tAlarm').value='';
+  save();renderTaskList();toast(`"${name}" added!`,'ok');scheduleAlarm(task);
+}
+function removeTask(id){if(!confirm('Remove?'))return;S.tasks=(S.tasks||[]).filter(x=>x.id!==id);save();renderTaskList();toast('Removed','info');}
+function setTaskStatus(id,status){const t=(S.tasks||[]).find(x=>x.id===id);if(!t)return;t.status=status;if(status==='completed')t.completedAt=new Date().toISOString();save();renderTaskList();if(status==='completed'&&soundOn())playChime();toast(status==='completed'?'✅ Done':status==='deferred'?'⏸ Deferred':'↩ Pending','ok');}
+function toggleEditTask(id){const p=document.getElementById('tedit-'+id);document.querySelectorAll('[id^="tedit-"]').forEach(x=>x.style.display='none');if(p)p.style.display='';}
+function saveTask(id){
+  const t=(S.tasks||[]).find(x=>x.id===id);if(!t)return;
+  const name=document.getElementById('te-name-'+id).value.trim();if(!name){toast('Name empty','err');return;}
+  t.name=name;t.desc=document.getElementById('te-desc-'+id).value.trim();t.priority=document.getElementById('te-pri-'+id).value;
+  t.eta=document.getElementById('te-eta-'+id).value||null;t.reminder=document.getElementById('te-reminder-'+id).value;t.alarm=document.getElementById('te-alarm-'+id).value;
+  save();renderTaskList();toast('Updated!','ok');scheduleAlarm(t);
+}
+function renderTaskList(){
+  const list=document.getElementById('taskList');if(!list)return;
+  let tasks=myTasks();
+  const filter=document.getElementById('taskFilter')?.value||'all',sort=document.getElementById('taskSort')?.value||'priority';
+  if(filter!=='all')tasks=tasks.filter(t=>t.status===filter);
+  if(sort==='priority')tasks.sort((a,b)=>(PRI_ORDER[a.priority]||1)-(PRI_ORDER[b.priority]||1));
+  else if(sort==='date')tasks.sort((a,b)=>a.dateAdded.localeCompare(b.dateAdded));
+  else if(sort==='eta')tasks.sort((a,b)=>{if(!a.eta&&!b.eta)return 0;if(!a.eta)return 1;if(!b.eta)return -1;return a.eta.localeCompare(b.eta);});
+  const today=todayStr(),sub=document.getElementById('taskSub');
+  if(sub){const p=myTasks().filter(t=>t.status==='pending').length;sub.textContent=`${p} pending · ${myTasks().filter(t=>t.status==='completed').length} completed`;}
+  if(!tasks.length){list.innerHTML='<div class="empty"><div class="empty-icon">📋</div>No tasks'+(filter!=='all'?' in this filter':' yet — add one above!')+'</div>';return;}
+  const RMAP={'on-eta':'On due date','1day':'1 day before','2days':'2 days before','1week':'1 week before'};
+  list.innerHTML=tasks.map(t=>{
+    const ov=t.eta&&t.eta<today&&t.status==='pending',dt=t.eta===today&&t.status==='pending';
+    const pl={high:'<span class="pri pri-high">High</span>',medium:'<span class="pri pri-medium">Medium</span>',low:'<span class="pri pri-low">Low</span>'}[t.priority]||'';
+    const sb={pending:'<span class="status-badge status-pending">Pending</span>',completed:'<span class="status-badge status-completed">Done</span>',deferred:'<span class="status-badge status-deferred">Deferred</span>'}[t.status]||'';
+    const etaStr=t.eta?`📅 ${ov?`<span style="color:var(--danger);font-weight:700">Overdue: ${fmtDate(t.eta)}</span>`:`Due: ${fmtDate(t.eta)}`}`:'';
+    return `<div class="task-item ${ov?'overdue':dt?'due-today':t.status==='completed'?'completed-task':t.status==='deferred'?'deferred':''} ${ov?'reminding':''}">
+      <div class="task-item-top">
+        <div class="task-item-body">
+          <div class="task-item-name">${esc(t.name)} ${pl} ${sb}</div>
+          <div class="task-item-meta">
+            ${etaStr?`<span>${etaStr}</span>`:''}
+            ${t.dateAdded?`<span>Added: ${fmtDate(t.dateAdded)}</span>`:''}
+            ${t.alarm?`<span>⏰ ${t.alarm}</span>`:''}
+            ${t.reminder?`<span>🔔 ${RMAP[t.reminder]||t.reminder}</span>`:''}
+          </div>
+          ${t.desc?`<div class="task-item-desc">${esc(t.desc)}</div>`:''}
+        </div>
+        <div class="task-item-actions">
+          ${t.status!=='completed'?`<button class="btn btn-success btn-xs" onclick="setTaskStatus('${t.id}','completed')">✓</button>`:''}
+          ${t.status==='pending'?`<button class="btn btn-xs btn-ghost" onclick="setTaskStatus('${t.id}','deferred')" title="Defer">⏸</button>`:''}
+          ${t.status!=='pending'?`<button class="btn btn-xs btn-ghost" onclick="setTaskStatus('${t.id}','pending')" title="Reopen">↩</button>`:''}
+          <button class="btn btn-xs" onclick="toggleEditTask('${t.id}')">✏️</button>
+          <button class="btn btn-danger btn-xs btn-icon" onclick="removeTask('${t.id}')">✕</button>
+        </div>
+      </div>
+      <div id="tedit-${t.id}" style="display:none;margin-top:10px">
+        <div class="edit-panel">
+          <div class="edit-panel-row">
+            <div style="flex:1;min-width:140px"><div class="edit-panel-label">Task name</div><input type="text" id="te-name-${t.id}" value="${esc(t.name)}" style="width:100%"></div>
+            <div style="flex:1;min-width:100px"><div class="edit-panel-label">Priority</div><select id="te-pri-${t.id}" style="width:100%"><option value="high" ${t.priority==='high'?'selected':''}>🔴 High</option><option value="medium" ${t.priority==='medium'?'selected':''}>Medium</option><option value="low" ${t.priority==='low'?'selected':''}>🟢 Low</option></select></div>
+          </div>
+          <div class="edit-panel-row"><div style="flex:1"><div class="edit-panel-label">Description</div><input type="text" id="te-desc-${t.id}" value="${esc(t.desc||'')}" style="width:100%"></div></div>
+          <div class="edit-panel-row">
+            <div style="flex:1"><div class="edit-panel-label">ETA</div><input type="date" id="te-eta-${t.id}" value="${t.eta||''}" style="width:100%"></div>
+            <div style="flex:1"><div class="edit-panel-label">Reminder</div><select id="te-reminder-${t.id}" style="width:100%"><option value="" ${!t.reminder?'selected':''}>None</option><option value="on-eta" ${t.reminder==='on-eta'?'selected':''}>On due date</option><option value="1day" ${t.reminder==='1day'?'selected':''}>1 day before</option><option value="2days" ${t.reminder==='2days'?'selected':''}>2 days before</option><option value="1week" ${t.reminder==='1week'?'selected':''}>1 week before</option></select></div>
+          </div>
+          <div class="edit-panel-row"><div style="flex:1"><div class="edit-panel-label">Alarm time</div><input type="time" id="te-alarm-${t.id}" value="${t.alarm||''}" style="width:100%"></div></div>
+          <div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveTask('${t.id}')">✓ Save</button><button class="btn btn-ghost btn-sm" onclick="toggleEditTask('${t.id}')">Cancel</button></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── REMINDERS & ALARMS ──
+let reminderInterval=null;
+function startReminderLoop(){if(reminderInterval)clearInterval(reminderInterval);reminderInterval=setInterval(()=>{checkReminders();checkAlarms();},60000);checkReminders();checkAlarms();}
+function checkReminders(){
+  if(!soundOn())return;
+  const today=todayStr();
+  myTasks().filter(t=>t.status==='pending'&&t.eta).forEach(t=>{
+    const td=reminderTriggerDate(t);
+    if(td===today){
+      const ov=t.eta<today;
+      toast(`🔔 ${ov?'Overdue':'Reminder'}: ${t.name}`,ov?'err':'warn');
+      if(soundOn())playAlarm();
+      // Log reminder notification
+      const dueStr=t.eta?' (due '+fmtDate(t.eta)+')':'';
+      logEntry('reminder','🔔 '+(ov?'Overdue':'Reminder')+': '+t.name+dueStr,0);
+    }
+  });
+  // Check for overdue tasks at start of day
+  myTasks().filter(t=>t.status==='pending'&&t.eta&&t.eta<today).forEach(t=>{
+    if(!t._overdueLoggedDate||t._overdueLoggedDate!==today){
+      t._overdueLoggedDate=today;
+      logEntry('reminder-missed',`⚠️ Overdue: ${t.name} (was due ${fmtDate(t.eta)})`,0);
+    }
+  });
+}
+function reminderTriggerDate(t){if(!t.eta||!t.reminder)return null;const d=new Date(t.eta+'T12:00:00');if(t.reminder==='on-eta')return t.eta;if(t.reminder==='1day')d.setDate(d.getDate()-1);else if(t.reminder==='2days')d.setDate(d.getDate()-2);else if(t.reminder==='1week')d.setDate(d.getDate()-7);return d.toLocaleDateString('en-CA');}
+function scheduleAlarm(task){if(!task.alarm)return;const[h,m]=task.alarm.split(':').map(Number);const now=new Date(),at=new Date();at.setHours(h,m,0,0);const diff=at-now;if(diff>0&&diff<86400000){const tid=setTimeout(()=>{if(!soundOn())return;toast(`⏰ Alarm: ${task.name}`,'warn');playAlarm();},diff);alarmTimers.push(tid);}}
+function checkAlarms(){const now=new Date(),hm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;myTasks().filter(t=>t.alarm===hm&&t.status==='pending').forEach(t=>{toast(`⏰ Alarm: ${t.name}`,'warn');if(soundOn())playAlarm();});}
+
+// ── MANAGE ──
+function renderManage(){
+  const cl=document.getElementById('manageChoreList');
+  cl.innerHTML=!S.chores.length?'<div class="empty" style="padding:1.5rem"><div class="empty-icon">📋</div>No chores yet</div>':
+    S.chores.map(c=>`<div class="manage-item" id="chore-row-${c.id}"><div class="manage-item-body"><div class="manage-item-name">${esc(c.name)}</div><div class="manage-item-meta">${c.pts} pts · ${c.group?`<span class="tag tag-group">${esc(c.group)}</span>`:'<span class="tag tag-solo">individual</span>'}</div></div><div class="manage-item-actions"><button class="btn btn-sm" onclick="toggleEditChore('${c.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="removeChore('${c.id}')">Remove</button></div></div>
+<div class="edit-panel" id="chore-edit-${c.id}" style="display:none"><div class="edit-panel-row"><div style="flex:1;min-width:140px"><div class="edit-panel-label">Name</div><input type="text" id="ce-name-${c.id}" value="${esc(c.name)}" style="width:100%"></div><div style="width:72px"><div class="edit-panel-label">Points</div><input type="number" id="ce-pts-${c.id}" value="${c.pts}" min="1" style="width:100%"></div></div><div class="edit-panel-row"><div style="flex:1"><div class="edit-panel-label">Group (blank = individual)</div><input type="text" id="ce-group-${c.id}" value="${esc(c.group||'')}" style="width:100%"></div></div><div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveChore('${c.id}')">✓ Save</button><button class="btn btn-ghost btn-sm" onclick="toggleEditChore('${c.id}')">Cancel</button></div></div>`).join('');
+  const ol=document.getElementById('manageOnetimeList');
+  const ots=S.oneTimeTasks||[];
+  ol.innerHTML=!ots.length?'<div class="empty" style="padding:1.5rem"><div class="empty-icon">📌</div>No one-time tasks</div>':
+    ots.map(t=>`<div class="manage-item"><div class="manage-item-body"><div class="manage-item-name">${esc(t.name)}</div><div class="manage-item-meta">${fmtDate(t.date)} · ${t.pts} pts · <span class="pri ${t.priority==='high'?'pri-high':t.priority==='medium'?'pri-medium':'pri-low'}">${t.priority}</span>${t.done?' · ✅ Done':''}</div></div><div class="manage-item-actions"><button class="btn btn-danger btn-sm" onclick="removeOneTimeTask('${t.id}')">Remove</button></div></div>`).join('');
+  const rl=document.getElementById('manageRewardList');
+  rl.innerHTML=!S.rewards.length?'<div class="empty" style="padding:1.5rem"><div class="empty-icon">🎁</div>No rewards yet</div>':
+    S.rewards.map(r=>`<div class="manage-item" id="reward-row-${r.id}"><div class="manage-item-body"><div class="manage-item-name">${esc(r.name)}</div><div class="manage-item-meta">${r.type==='timer'?`⏱ ${r.timerPts} pts/${r.timerHours}hr`:`${r.cost} pts`} · <span class="reward-type-badge ${(!r.redeemType||r.redeemType==='persistent')?'rtb-persistent':'rtb-onetime'}">${(!r.redeemType||r.redeemType==='persistent')?'♻️ persistent':'1️⃣ one-time'}</span>${r.timesUsed?` · used ${r.timesUsed}×`:''}</div></div><div class="manage-item-actions"><button class="btn btn-sm" onclick="toggleEditReward('${r.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="removeReward('${r.id}')">Remove</button></div></div>
+<div class="edit-panel" id="reward-edit-${r.id}" style="display:none"><div class="edit-panel-row"><div style="flex:2;min-width:140px"><div class="edit-panel-label">Name</div><input type="text" id="re-name-${r.id}" value="${esc(r.name)}" style="width:100%"></div></div><div class="edit-panel-row">${r.type==='timer'?`<div style="flex:1;min-width:80px"><div class="edit-panel-label">Points</div><input type="number" id="re-tpts-${r.id}" value="${r.timerPts}" min="1" style="width:100%"></div><div style="flex:1;min-width:80px"><div class="edit-panel-label">Hours</div><input type="number" id="re-thrs-${r.id}" value="${r.timerHours}" min="0.25" step="0.25" style="width:100%"></div>`:`<div style="flex:1;min-width:80px"><div class="edit-panel-label">Points</div><input type="number" id="re-cost-${r.id}" value="${r.cost}" min="1" style="width:100%"></div>`}</div><div class="edit-panel-actions"><button class="btn btn-primary btn-sm" onclick="saveReward('${r.id}')">✓ Save</button><button class="btn btn-ghost btn-sm" onclick="toggleEditReward('${r.id}')">Cancel</button></div></div>`).join('');
+  const ul=document.getElementById('manageUserList');
+  ul.innerHTML=!S.users.length?'<div class="empty" style="padding:1.5rem">No users</div>':
+    S.users.map(u=>{const isMe=currentUser&&currentUser.id===u.id;return`<div class="user-item"><div class="user-item-avatar">${u.username.slice(0,2).toUpperCase()}</div><div class="user-item-body"><div class="user-item-name">${esc(cap(u.username))} ${isMe?'<span class="tag tag-group">you</span>':''}</div><div class="user-item-meta">${u.role||'chore'} user · @${esc(u.username)}</div></div><div style="display:flex;gap:6px"><button class="btn btn-sm btn-warning" onclick="changeUserPassword('${u.id}')">Pwd</button>${S.users.length>1?`<button class="btn btn-danger btn-sm" onclick="removeUser('${u.id}')">Remove</button>`:''}</div></div>`;}).join('');
+  document.getElementById('setTarget').value=S.settings.dailyTarget;
+  document.getElementById('setPenalty').value=S.settings.penaltyPts;
+  refreshGroupSelect();
+}
+function toggleEditChore(id){const p=document.getElementById('chore-edit-'+id);const o=p.style.display!=='none';document.querySelectorAll('[id^="chore-edit-"],[id^="reward-edit-"]').forEach(x=>x.style.display='none');if(!o)p.style.display='';}
+function saveChore(id){
+  const c=S.chores.find(x=>x.id===id);if(!c)return;
+  const name=document.getElementById('ce-name-'+id).value.trim(),pts=parseInt(document.getElementById('ce-pts-'+id).value),group=document.getElementById('ce-group-'+id).value.trim()||null;
+  if(!name){toast('Name empty','err');return;}if(!pts||pts<1){toast('Invalid pts','err');return;}
+  if(S.checked[id]&&!c.group){S.points-=c.pts;S.points+=pts;}
+  const oldName=c.name,oldPts=c.pts,oldGroup=c.group;
+  c.name=name;c.pts=pts;c.group=group;
+  logAdmin('chore-edit',`Chore edited: "${oldName}"→"${name}"`,`pts: ${oldPts}→${pts}${oldGroup!==group?`, group: ${oldGroup||'none'}→${group||'none'}`:''}`);
+  save();updateBank();renderManage();if(activeTab==='dashboard')renderDashboard();toast(`"${name}" updated!`,'ok');
+}
+function toggleEditReward(id){const p=document.getElementById('reward-edit-'+id);const o=p.style.display!=='none';document.querySelectorAll('[id^="chore-edit-"],[id^="reward-edit-"]').forEach(x=>x.style.display='none');if(!o)p.style.display='';}
+function saveReward(id){
+  const r=S.rewards.find(x=>x.id===id);if(!r)return;
+  const name=document.getElementById('re-name-'+id).value.trim();if(!name){toast('Name empty','err');return;}
+  const oldName=r.name;
+  if(r.type==='timer'){const p=parseFloat(document.getElementById('re-tpts-'+id).value),h=parseFloat(document.getElementById('re-thrs-'+id).value);if(!p||!h){toast('Invalid values','err');return;}logAdmin('reward-edit',`Reward edited: "${oldName}"→"${name}"`,`${r.timerPts}pts/${r.timerHours}hr → ${p}pts/${h}hr`);r.timerPts=p;r.timerHours=h;}
+  else{const c=parseInt(document.getElementById('re-cost-'+id).value);if(!c||c<1){toast('Invalid pts','err');return;}logAdmin('reward-edit',`Reward edited: "${oldName}"→"${name}"`,`pts: ${r.cost}→${c}`);r.cost=c;}
+  r.name=name;save();renderManage();renderRewards();toast(`"${name}" updated!`,'ok');
+}
+function saveSetting(key,inputId){
+  const v=parseInt(document.getElementById(inputId).value);if(isNaN(v)||v<0){toast('Invalid number','err');return;}
+  const oldVal=S.settings[key];
+  S.settings[key]=v;
+  logAdmin('setting-change',`Setting changed: ${key}`,`${oldVal} → ${v}`);
+  save();updateBank();toast('Saved!','ok');
+}
+function adjustPoints(){
+  const a=parseInt(document.getElementById('adjustAmt').value);if(isNaN(a)){toast('Enter a number','err');return;}
+  S.points+=a;
+  logEntry('bonus',`Manual: ${a>0?'+':''}${a} pts`,a);
+  logAdmin('setting-change',`Bank manually adjusted`,`${a>0?'+':''}${a} pts, new balance: ${S.points}`);
+  document.getElementById('adjustAmt').value='';save();updateBank();toast(`${a>0?'+':''}${a} pts applied`,'ok');
+}
+
+// ── RESET / CLEAR ──
+function resetDay(){
+  if(!confirm("Reset today's checkmarks?"))return;
+  S.chores.filter(c=>!c.group&&S.checked[c.id]).forEach(c=>{S.points-=c.pts;});
+  groups().filter(g=>isGroupDone(g)).forEach(g=>{S.points-=groupPts(g);});
+  (S.oneTimeTasks||[]).filter(t=>t.date===todayStr()&&t.done).forEach(t=>{S.points-=t.pts;t.done=false;});
+  const h=getTodayHistory();h.entries.push({type:'reset',label:'Day manually reset',pts:0,time:fmtTime()});
+  logAdmin('setting-change','Day manually reset',`by parent on ${todayStr()}`);
+  S.checked={};S.lastResetDate=todayStr();save();updateBank();renderDashboard();toast('Day reset','info');
+}
+function resetPoints(){if(!confirm('Reset bank to 0?'))return;logAdmin('setting-change','Bank reset to 0',`was ${S.points} pts`);S.points=0;save();updateBank();toast('Bank reset','info');}
+function clearHistory(){if(!confirm('Clear all history?'))return;logAdmin('setting-change','History cleared','all activity and admin logs cleared');S.history=[];S.adminLog=[];save();renderHistory();toast('History cleared','info');}
+async function clearAll(){
+  if(!confirm('Clear ALL data from server?'))return;if(!confirm('100% sure?'))return;
+  if(tvSession.active){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
+  try{await deleteFromServer();}catch(e){toast('Delete failed','err');return;}
+  S=DEFAULT_STATE();parentUnlocked=false;setSyncDot('ok');updateLockUI();updateBank();showTab('dashboard');renderHistory();toast('All data cleared','info');
+}
+
+// ── MIDNIGHT ──
+function midnightCheck(){
+  const today=todayStr();if(S.lastResetDate===today)return;
+  if(S.lastResetDate&&S.lastResetDate!==today){
+    const earned=todayEarned(),target=S.settings.dailyTarget,penalty=S.settings.penaltyPts;
+    if(earned<target&&penalty>0){S.points-=penalty;const prev=S.history.find(x=>x.date===S.lastResetDate)||getTodayHistory();prev.entries.push({type:'penalty',label:`Target missed (${earned}/${target} pts)`,pts:-penalty,time:'23:59'});prev.penalty=(prev.penalty||0)+penalty;}
+  }
+  S.checked={};S.lastResetDate=today;save();updateBank();renderDashboard();
+}
+function scheduleNextMidnight(){const now=new Date(),next=new Date(now);next.setDate(now.getDate()+1);next.setHours(0,0,5,0);setTimeout(()=>{midnightCheck();scheduleNextMidnight();},next-now);}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('pinModal').classList.contains('open')){if(e.key>='0'&&e.key<='9')pinKey(e.key);else if(e.key==='Backspace')pinDel();else if(e.key==='Escape')pinCancel();return;}
+  if(e.key==='Enter'){if(activeTab==='manage')addChore();if(activeTaskTab==='tasks'&&currentUser?.role==='task')addTask();}
+});
+
+// ── START ──
+initApp();
+</script>
+</body>
+</html>
