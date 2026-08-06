@@ -1,5 +1,5 @@
 /* ChompChores PWA — network-first for HTML so deploys aren't stuck behind cache */
-const CACHE = "chompchores-full-v8";
+const CACHE = "chompchores-full-v9";
 const SHELL = [
   "/manifest.webmanifest",
   "/icons/icon-192.png",

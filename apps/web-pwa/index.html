@@ -311,9 +311,10 @@ body.danger-mode .danger-banner{display:block}
 .hh-switch label,.view-as label{font-size:11px;font-weight:700;color:var(--text-hint);letter-spacing:.04em;white-space:nowrap;text-align:left;line-height:1.2}
 .hh-switch select,.view-as select{padding:5px 8px;font-size:12px;width:auto;min-width:120px;max-width:160px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-family:inherit}
 .task-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:2px}
-.task-summary-stat{background:var(--surface-muted);border-radius:var(--radius-sm);padding:10px 8px;text-align:center}
-.task-summary-stat .tss-num{font-size:22px;font-weight:800;letter-spacing:-.5px}
-.task-summary-stat .tss-label{font-size:11px;font-weight:600;color:var(--text-muted);margin-top:2px}
+.task-summary-stat{background:var(--surface-muted);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.task-summary-stat .tss-num{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1;margin:0}
+.task-summary-stat .tss-label{font-size:11px;font-weight:600;color:var(--text-muted);margin:0;line-height:1.2}
+.task-summary-grid{margin-top:12px}
 .task-summary-stat.missed .tss-num{color:var(--danger)}
 .task-summary-stat.completed .tss-num{color:var(--success)}
 @media(max-width:520px){.task-summary-grid{grid-template-columns:repeat(2,1fr)}}
@@ -607,14 +608,24 @@ body.danger-mode .danger-banner{display:block}
   <!-- TASK SHELL -->
   <div id="taskShell" style="display:none">
     <div class="bank-card" id="taskSummaryCard">
-      <div class="bank-label-row">
-        <div class="bank-label">Summary</div>
-        <div class="view-as" id="viewAsWrapTask">
-          <label for="viewAsSelectTask">Impersonate</label>
-          <select id="viewAsSelectTask" onchange="onImpersonateChangeTask()"></select>
+      <div class="bank-header">
+        <div class="bank-left">
+          <div class="bank-label">Summary</div>
+          <div id="taskSummaryEmpty" class="bank-stat" style="display:none"></div>
+        </div>
+        <div class="bank-right">
+          <div class="bank-controls" id="taskBankControls">
+            <div class="hh-switch" id="hhSwitchWrapTask">
+              <label for="taskHouseholdSelect">Household</label>
+              <select id="taskHouseholdSelect" onchange="onTaskHouseholdChange()"></select>
+            </div>
+            <div class="view-as" id="viewAsWrapTask">
+              <label for="viewAsSelectTask">Impersonate</label>
+              <select id="viewAsSelectTask" onchange="onImpersonateChangeTask()"></select>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="taskSummaryEmpty" class="bank-stat" style="display:none">Choose someone to impersonate</div>
       <div class="task-summary-grid" id="taskSummaryGrid">
         <div class="task-summary-stat"><div class="tss-num" id="tsTotal">0</div><div class="tss-label">Total</div></div>
         <div class="task-summary-stat completed"><div class="tss-num" id="tsCompleted">0</div><div class="tss-label">Completed</div></div>
@@ -958,34 +969,52 @@ function fillAssignSelects(){
   });
 }
 function updateBankControlsVisibility(){
-  const controls=document.getElementById('bankControls');
-  if(!controls)return;
-  const hh=document.getElementById('hhSwitchWrap');
-  const va=document.getElementById('viewAsWrap');
-  const show=!!((hh&&hh.classList.contains('visible'))||(va&&va.classList.contains('visible')));
-  controls.classList.toggle('visible',show);
+  [
+    ['bankControls','hhSwitchWrap','viewAsWrap'],
+    ['taskBankControls','hhSwitchWrapTask','viewAsWrapTask']
+  ].forEach(([cid,hid,vid])=>{
+    const controls=document.getElementById(cid);
+    if(!controls)return;
+    const hh=document.getElementById(hid);
+    const va=document.getElementById(vid);
+    const show=!!((hh&&hh.classList.contains('visible'))||(va&&va.classList.contains('visible')));
+    controls.classList.toggle('visible',show);
+  });
 }
 async function fillHouseholdBankSelect(){
-  const wrap=document.getElementById('hhSwitchWrap');
-  const sel=document.getElementById('bankHouseholdSelect');
-  if(!wrap||!sel||!sb)return;
-  if(!isAdmin()){wrap.classList.remove('visible');updateBankControlsVisibility();return;}
+  if(!sb)return;
+  const wraps=[
+    ['hhSwitchWrap','bankHouseholdSelect'],
+    ['hhSwitchWrapTask','taskHouseholdSelect']
+  ];
+  if(!isAdmin()){
+    wraps.forEach(([wid])=>{const w=document.getElementById(wid);if(w)w.classList.remove('visible');});
+    updateBankControlsVisibility();
+    return;
+  }
   const {data,error}=await sb.rpc('list_my_households');
-  if(error){console.warn(error);wrap.classList.remove('visible');updateBankControlsVisibility();return;}
+  if(error){
+    console.warn(error);
+    wraps.forEach(([wid])=>{const w=document.getElementById(wid);if(w)w.classList.remove('visible');});
+    updateBankControlsVisibility();
+    return;
+  }
   const rows=Array.isArray(data)?data:[];
-  // Show when admin has at least one household (handy even with one — name visible)
-  wrap.classList.toggle('visible',rows.length>0);
-  sel.innerHTML=rows.map(r=>`<option value="${esc(r.household_id)}"${r.active?' selected':''}>${esc(r.household_name||'My House')}</option>`).join('')||'<option value="">—</option>';
+  const opts=rows.map(r=>`<option value="${esc(r.household_id)}"${r.active?' selected':''}>${esc(r.household_name||'My House')}</option>`).join('')||'<option value="">—</option>';
+  wraps.forEach(([wid,sid])=>{
+    const wrap=document.getElementById(wid);
+    const sel=document.getElementById(sid);
+    if(!wrap||!sel)return;
+    wrap.classList.toggle('visible',rows.length>0);
+    sel.innerHTML=opts;
+  });
   updateBankControlsVisibility();
-  // Keep Manage select in sync if present
   const manageSel=document.getElementById('householdSwitchSelect');
   if(manageSel){
     manageSel.innerHTML=rows.map(r=>`<option value="${esc(r.household_id)}"${r.active?' selected':''}>${esc(r.household_name||'My House')}${r.active?' (current)':''}</option>`).join('')||'<option value="">No households</option>';
   }
 }
-async function onBankHouseholdChange(){
-  const sel=document.getElementById('bankHouseholdSelect');
-  const id=sel&&sel.value;
+async function switchHouseholdById(id){
   if(!id||!isAdmin())return;
   const {error}=await sb.rpc('switch_household',{p_household_id:id});
   if(error){toast(error.message||'Switch failed','err');await fillHouseholdBankSelect();return;}
@@ -996,11 +1025,24 @@ async function onBankHouseholdChange(){
   fillViewAsSelect();fillViewAsSelectTask();fillAssignSelects();
   await fillHouseholdBankSelect();
   updateBank();
+  renderTaskSummary();
+  if(document.getElementById('taskShell')?.style.display!=='none'){
+    if(activeTaskTab==='tasks'){renderTaskList();renderTaskCalDash();}
+    else if(activeTaskTab==='calendar')renderTaskCalendarTab();
+  }
   if(activeTab==='dashboard')renderDashboard();
   else if(activeTab==='rewards'){renderRewardMode();renderRewards();}
   else if(activeTab==='history')renderHistory();
   else if(activeTab==='manage')renderManage();
   toast('Switched household','ok');
+}
+async function onBankHouseholdChange(){
+  const sel=document.getElementById('bankHouseholdSelect');
+  await switchHouseholdById(sel&&sel.value);
+}
+async function onTaskHouseholdChange(){
+  const sel=document.getElementById('taskHouseholdSelect');
+  await switchHouseholdById(sel&&sel.value);
 }
 function fillViewAsSelect(){
   const wrap=document.getElementById('viewAsWrap');
@@ -1039,12 +1081,15 @@ function fillViewAsSelectTask(){
   if(!wrap||!sel)return;
   const show=isAdmin();
   wrap.classList.toggle('visible',!!show);
-  if(!show)return;
-  const users=taskCapableUsers();
+  updateBankControlsVisibility();
+  if(!show){fillHouseholdBankSelect();return;}
+  // Admins can impersonate anyone for tasks view
+  const users=(S.users||[]).slice();
   const withTasks=new Set((S.tasks||[]).map(t=>t.userId).filter(Boolean));
   (S.users||[]).forEach(u=>{if(withTasks.has(u.id)&&!users.find(x=>x.id===u.id))users.push(u);});
   sel.innerHTML='<option value="">— Select a user —</option>'+users.map(u=>`<option value="${u.id}">${esc(cap(u.username))}</option>`).join('');
   sel.value=users.some(u=>u.id===impersonateUserId)?impersonateUserId:'';
+  fillHouseholdBankSelect();
 }
 function onImpersonateChangeTask(){
   const sel=document.getElementById('viewAsSelectTask');
@@ -1429,7 +1474,9 @@ async function doLogout(){
   const vw=document.getElementById('viewAsWrap'); if(vw) vw.classList.remove('visible');
   const vwt=document.getElementById('viewAsWrapTask'); if(vwt) vwt.classList.remove('visible');
   const hh=document.getElementById('hhSwitchWrap'); if(hh) hh.classList.remove('visible');
+  const hht=document.getElementById('hhSwitchWrapTask'); if(hht) hht.classList.remove('visible');
   const bc=document.getElementById('bankControls'); if(bc) bc.classList.remove('visible');
+  const tbc=document.getElementById('taskBankControls'); if(tbc) tbc.classList.remove('visible');
   try{if(sb)await sb.auth.signOut();}catch(e){}
   showLogin();
 }
@@ -1721,8 +1768,12 @@ function renderTaskSummary(){
   const grid=document.getElementById('taskSummaryGrid');
   if(!empty||!grid)return;
   if(!hasActiveView()){
-    empty.style.display='';empty.textContent=isAdmin()?'Choose someone to impersonate':'';
-    grid.style.display='none';
+    empty.style.display='none';
+    grid.style.display='';
+    document.getElementById('tsTotal').textContent='0';
+    document.getElementById('tsCompleted').textContent='0';
+    document.getElementById('tsPending').textContent='0';
+    document.getElementById('tsMissed').textContent='0';
     return;
   }
   empty.style.display='none';grid.style.display='';
