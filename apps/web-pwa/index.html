@@ -284,9 +284,9 @@ body.danger-mode .danger-banner{display:block}
   .topbar{grid-template-columns:1fr;row-gap:8px}
   .topbar-center{text-align:left;order:-1}
   .topbar-right{justify-content:flex-start}
-  .view-as select{min-width:100px}
+  .view-as select,.hh-switch select{min-width:100px}
 }
-@media(max-width:480px){.shell{padding:1rem .75rem 5rem}.bank-pts{font-size:36px}.nav-btn{font-size:10px;padding:7px 3px;flex:0 0 auto}.nav{overflow-x:auto;-webkit-overflow-scrolling:touch}.tv-timer-display{font-size:40px}.topbar-center{font-size:16px}.view-as select{min-width:88px;max-width:140px}.view-as label{display:none}.mode-switch button{padding:6px 9px;font-size:11px}}
+@media(max-width:480px){.shell{padding:1rem .75rem 5rem}.bank-pts{font-size:36px}.nav-btn{font-size:10px;padding:7px 3px;flex:0 0 auto}.nav{overflow-x:auto;-webkit-overflow-scrolling:touch}.tv-timer-display{font-size:40px}.topbar-center{font-size:16px}.view-as select,.hh-switch select{min-width:88px;max-width:130px}.mode-switch button{padding:6px 9px;font-size:11px}}
 
 .mode-switch{display:none;align-items:center;gap:0;border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;margin-right:6px}
 .mode-switch.visible{display:flex}
@@ -303,10 +303,12 @@ body.danger-mode .danger-banner{display:block}
 .role-badge.task{background:#eff6ff;color:#2563eb}
 .role-badge.admin{background:#1a1a2e;color:#c4b5fd}
 
-.view-as{display:none;align-items:center;gap:6px}
-.view-as.visible{display:flex}
-.view-as label{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap}
-.view-as select{padding:5px 8px;font-size:12px;width:auto;min-width:120px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-family:inherit}
+.bank-controls{display:none;align-items:flex-end;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.bank-controls.visible{display:flex}
+.hh-switch,.view-as{display:none;flex-direction:column;align-items:stretch;gap:3px;min-width:0}
+.hh-switch.visible,.view-as.visible{display:flex}
+.hh-switch label,.view-as label{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap;text-align:left;line-height:1.2}
+.hh-switch select,.view-as select{padding:5px 8px;font-size:12px;width:auto;min-width:120px;max-width:160px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-family:inherit}
 .task-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:2px}
 .task-summary-stat{background:var(--surface-muted);border-radius:var(--radius-sm);padding:10px 8px;text-align:center}
 .task-summary-stat .tss-num{font-size:22px;font-weight:800;letter-spacing:-.5px}
@@ -396,9 +398,15 @@ body.danger-mode .danger-banner{display:block}
     <div class="bank-card" id="bankCard">
       <div class="bank-label-row">
         <div class="bank-label">Point Bank</div>
-        <div class="view-as" id="viewAsWrap">
-          <label for="viewAsSelect">Impersonate</label>
-          <select id="viewAsSelect" onchange="onImpersonateChange()"></select>
+        <div class="bank-controls" id="bankControls">
+          <div class="hh-switch" id="hhSwitchWrap">
+            <label for="bankHouseholdSelect">Household</label>
+            <select id="bankHouseholdSelect" onchange="onBankHouseholdChange()"></select>
+          </div>
+          <div class="view-as" id="viewAsWrap">
+            <label for="viewAsSelect">Impersonate</label>
+            <select id="viewAsSelect" onchange="onImpersonateChange()"></select>
+          </div>
         </div>
       </div>
       <div class="bank-top">
@@ -938,12 +946,58 @@ function fillAssignSelects(){
       : '<span style="font-size:12px;color:var(--text-muted)">No users</span>';
   });
 }
+function updateBankControlsVisibility(){
+  const controls=document.getElementById('bankControls');
+  if(!controls)return;
+  const hh=document.getElementById('hhSwitchWrap');
+  const va=document.getElementById('viewAsWrap');
+  const show=!!((hh&&hh.classList.contains('visible'))||(va&&va.classList.contains('visible')));
+  controls.classList.toggle('visible',show);
+}
+async function fillHouseholdBankSelect(){
+  const wrap=document.getElementById('hhSwitchWrap');
+  const sel=document.getElementById('bankHouseholdSelect');
+  if(!wrap||!sel||!sb)return;
+  if(!isAdmin()){wrap.classList.remove('visible');updateBankControlsVisibility();return;}
+  const {data,error}=await sb.rpc('list_my_households');
+  if(error){console.warn(error);wrap.classList.remove('visible');updateBankControlsVisibility();return;}
+  const rows=Array.isArray(data)?data:[];
+  // Show when admin has at least one household (handy even with one — name visible)
+  wrap.classList.toggle('visible',rows.length>0);
+  sel.innerHTML=rows.map(r=>`<option value="${esc(r.household_id)}"${r.active?' selected':''}>${esc(r.household_name||'My House')}</option>`).join('')||'<option value="">—</option>';
+  updateBankControlsVisibility();
+  // Keep Manage select in sync if present
+  const manageSel=document.getElementById('householdSwitchSelect');
+  if(manageSel){
+    manageSel.innerHTML=rows.map(r=>`<option value="${esc(r.household_id)}"${r.active?' selected':''}>${esc(r.household_name||'My House')}${r.active?' (current)':''}</option>`).join('')||'<option value="">No households</option>';
+  }
+}
+async function onBankHouseholdChange(){
+  const sel=document.getElementById('bankHouseholdSelect');
+  const id=sel&&sel.value;
+  if(!id||!isAdmin())return;
+  const {error}=await sb.rpc('switch_household',{p_household_id:id});
+  if(error){toast(error.message||'Switch failed','err');await fillHouseholdBankSelect();return;}
+  impersonateUserId=null;persistImpersonation();
+  await loadFromServer();
+  const user=S.users.find(u=>u.id===cloudMe.id)||S.users.find(u=>(u.username||'').toLowerCase()===(cloudMe.username||'').toLowerCase());
+  if(user)currentUser=sessionUser(user);
+  fillViewAsSelect();fillViewAsSelectTask();fillAssignSelects();
+  await fillHouseholdBankSelect();
+  updateBank();
+  if(activeTab==='dashboard')renderDashboard();
+  else if(activeTab==='rewards'){renderRewardMode();renderRewards();}
+  else if(activeTab==='history')renderHistory();
+  else if(activeTab==='manage')renderManage();
+  toast('Switched household','ok');
+}
 function fillViewAsSelect(){
   const wrap=document.getElementById('viewAsWrap');
   const sel=document.getElementById('viewAsSelect');
   if(!wrap||!sel)return;
   const show=isAdmin();
   wrap.classList.toggle('visible',!!show);
+  updateBankControlsVisibility();
   if(!show)return;
   const users=(S.users||[]).filter(u=>userRoles(u).includes('chore'));
   // Also include any user who already has assigned chores
@@ -951,6 +1005,7 @@ function fillViewAsSelect(){
   (S.users||[]).forEach(u=>{if(withChores.has(u.id)&&!users.find(x=>x.id===u.id))users.push(u);});
   sel.innerHTML='<option value="">— Select a user —</option>'+users.map(u=>`<option value="${u.id}">${esc(cap(u.username))}</option>`).join('');
   sel.value=users.some(u=>u.id===impersonateUserId)?impersonateUserId:'';
+  fillHouseholdBankSelect();
 }
 function onImpersonateChange(){
   const sel=document.getElementById('viewAsSelect');
@@ -1276,35 +1331,27 @@ async function doLogin(){
   }catch(e){err.textContent=e.message||'Sign in failed';console.error(e);}
 }
 async function refreshHouseholdSwitcher(){
-  const sel=document.getElementById('householdSwitchSelect');
-  if(!sel||!sb)return;
-  const {data,error}=await sb.rpc('list_my_households');
-  if(error){console.warn(error);sel.innerHTML='<option value="">—</option>';return;}
-  const rows=Array.isArray(data)?data:[];
-  sel.innerHTML=rows.map(r=>`<option value="${esc(r.household_id)}"${r.active?' selected':''}>${esc(r.household_name||'My House')}${r.active?' (current)':''}</option>`).join('')||'<option value="">No households</option>';
+  await fillHouseholdBankSelect();
 }
 async function switchActiveHousehold(){
   if(!isAdmin()){toast('Admin only','warn');return;}
   const id=document.getElementById('householdSwitchSelect')?.value;
   if(!id){toast('Pick a household','err');return;}
-  const {error}=await sb.rpc('switch_household',{p_household_id:id});
-  if(error){toast(error.message||'Switch failed','err');return;}
-  await loadFromServer();
-  const user=S.users.find(u=>u.id===cloudMe.id)||S.users.find(u=>(u.username||'').toLowerCase()===(cloudMe.username||'').toLowerCase());
-  if(user)currentUser=sessionUser(user);
-  fillViewAsSelect();fillViewAsSelectTask();fillAssignSelects();
-  renderManage();updateBank();
-  toast('Switched household','ok');
+  const bankSel=document.getElementById('bankHouseholdSelect');
+  if(bankSel)bankSel.value=id;
+  await onBankHouseholdChange();
 }
 async function createAnotherHousehold(){
   if(!isAdmin()){toast('Admin only','warn');return;}
   const name=(document.getElementById('newHouseholdName')?.value||'').trim()||'My House';
   const {data,error}=await sb.rpc('create_additional_household',{p_name:name});
   if(error){toast(error.message||'Could not create household','err');return;}
+  impersonateUserId=null;persistImpersonation();
   await loadFromServer();
   const user=S.users.find(u=>u.id===cloudMe.id)||S.users.find(u=>(u.username||'').toLowerCase()===(cloudMe.username||'').toLowerCase());
   if(user)currentUser=sessionUser(user);
   fillViewAsSelect();fillViewAsSelectTask();fillAssignSelects();
+  await fillHouseholdBankSelect();
   document.getElementById('newHouseholdName').value='My House';
   renderManage();updateBank();
   toast(`Created "${data?.household_name||name}" and switched to it`,'ok');
@@ -1370,6 +1417,8 @@ async function doLogout(){
   const sw=document.getElementById('modeSwitch'); if(sw) sw.classList.remove('visible');
   const vw=document.getElementById('viewAsWrap'); if(vw) vw.classList.remove('visible');
   const vwt=document.getElementById('viewAsWrapTask'); if(vwt) vwt.classList.remove('visible');
+  const hh=document.getElementById('hhSwitchWrap'); if(hh) hh.classList.remove('visible');
+  const bc=document.getElementById('bankControls'); if(bc) bc.classList.remove('visible');
   try{if(sb)await sb.auth.signOut();}catch(e){}
   showLogin();
 }
