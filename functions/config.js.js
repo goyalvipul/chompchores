@@ -1,4 +1,6 @@
-/** Cloudflare Pages Function — serves /config.js from runtime env vars. */
+/** Cloudflare Pages Function — serves /config.js from runtime env vars.
+ * Must live at repo-root /functions (not inside the static output folder).
+ */
 export async function onRequest(context) {
   const url = context.env.SUPABASE_URL || "";
   const key =

@@ -27,8 +27,9 @@ Sign in with the Supabase Auth **email/password** (not the old username login).
 3. **Variables and secrets** (Production) — already the right place:
    - `SUPABASE_URL` = `https://YOUR_REF.supabase.co`
    - `SUPABASE_ANON_KEY` = your anon or publishable key  
-   These are read at **runtime** by `functions/config.js.js` (not during build).
-4. Deploy → open the HTTPS URL → Add to Home Screen on phone.
+   These are read at **runtime** by repo-root [`functions/config.js.js`](../../functions/config.js.js) (not during build).
+4. Deploy → open `https://YOUR-SITE.pages.dev/config.js` — you should see your Supabase URL in plain JS (not the HTML app page).
+5. Then open the site root and sign in.
 
 Locally you still use a gitignored `config.js` (`cp config.example.js config.js`).
 
