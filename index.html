@@ -18,7 +18,8 @@
   --shadow-md:0 4px 16px rgba(0,0,0,.1),0 2px 4px rgba(0,0,0,.05);
   --shadow-lg:0 8px 32px rgba(0,0,0,.14),0 4px 8px rgba(0,0,0,.08);
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .5s}
+html{overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .5s;overflow-x:hidden;width:100%}
 body.danger-mode{animation:danger-pulse 3s ease-in-out infinite}
 @keyframes danger-pulse{0%,100%{background:#fff0f0}50%{background:#ffe4e4}}
 .screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:2rem;text-align:center;gap:1rem}
@@ -33,19 +34,20 @@ body.danger-mode{animation:danger-pulse 3s ease-in-out infinite}
 .login-error{font-size:13px;color:var(--danger);text-align:center;min-height:18px;font-weight:500}
 .login-btn{width:100%;padding:12px;font-size:15px;font-weight:700;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;cursor:pointer;transition:opacity .15s}
 .login-btn:hover{opacity:.88}
-.shell{max-width:720px;margin:0 auto;padding:1rem 1rem 5rem}
+.shell{max-width:720px;margin:0 auto;padding:1rem 1rem 5rem;width:100%}
 .topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.25rem;gap:8px}
 .topbar-left{display:flex;align-items:center;gap:8px;min-width:0}
 .topbar-center{text-align:center;font-size:20px;font-weight:800;letter-spacing:-.5px;white-space:nowrap}
 .topbar-center span{color:var(--accent)}
-.topbar-right{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.topbar-right{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;row-gap:6px}
 .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 .user-greeting{font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .4s}
 .bank-card{background:var(--surface);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow);transition:border-color .3s,background .3s}
 .bank-card.negative{border-color:var(--danger-border);background:var(--danger-light)}
 .bank-top{display:flex;align-items:flex-start;justify-content:space-between}
-.bank-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-hint);margin-bottom:4px}
+.bank-label-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap;row-gap:6px}
+.bank-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-hint)}
 .bank-pts{font-size:48px;font-weight:800;letter-spacing:-3px;line-height:1;transition:color .3s}
 .bank-pts.positive{color:var(--success)}.bank-pts.negative{color:var(--danger)}.bank-pts.zero{color:var(--text-hint)}
 .bank-right{text-align:right}
@@ -209,7 +211,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .edit-panel input,.edit-panel select{padding:7px 10px;font-size:13px;border-radius:var(--radius-sm);border:1px solid var(--accent-border);background:var(--surface);color:var(--text)}
 .edit-panel input:focus,.edit-panel select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(108,71,232,.15)}
 .edit-panel-actions{display:flex;gap:6px;margin-top:2px}
-.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .setting-row:last-child{border-bottom:none}
 .setting-body{flex:1}
 .setting-label{font-size:14px;font-weight:500}
@@ -259,7 +261,13 @@ body.danger-mode .danger-banner{display:block}
 .t-warn{background:var(--warning-light);border:1px solid var(--warning-border);color:var(--warning)}
 @keyframes t-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes t-out{to{opacity:0}}
-@media(max-width:480px){.shell{padding:1rem .75rem 5rem}.bank-pts{font-size:36px}.nav-btn{font-size:10px;padding:7px 3px}.tv-timer-display{font-size:40px}.topbar-center{font-size:16px}}
+@media(max-width:680px){
+  .topbar{grid-template-columns:1fr;row-gap:8px}
+  .topbar-center{text-align:left;order:-1}
+  .topbar-right{justify-content:flex-start}
+  .view-as select{min-width:100px}
+}
+@media(max-width:480px){.shell{padding:1rem .75rem 5rem}.bank-pts{font-size:36px}.nav-btn{font-size:10px;padding:7px 3px;flex:0 0 auto}.nav{overflow-x:auto;-webkit-overflow-scrolling:touch}.tv-timer-display{font-size:40px}.topbar-center{font-size:16px}.view-as select{min-width:88px;max-width:140px}.view-as label{display:none}.mode-switch button{padding:6px 9px;font-size:11px}}
 
 .mode-switch{display:none;align-items:center;gap:0;border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;margin-right:6px}
 .mode-switch.visible{display:flex}
@@ -276,10 +284,17 @@ body.danger-mode .danger-banner{display:block}
 .role-badge.task{background:#eff6ff;color:#2563eb}
 .role-badge.admin{background:#1a1a2e;color:#c4b5fd}
 
-.view-as{display:none;align-items:center;gap:6px;margin-right:8px}
+.view-as{display:none;align-items:center;gap:6px}
 .view-as.visible{display:flex}
 .view-as label{font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap}
 .view-as select{padding:5px 8px;font-size:12px;width:auto;min-width:120px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-family:inherit}
+.task-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:2px}
+.task-summary-stat{background:var(--surface-muted);border-radius:var(--radius-sm);padding:10px 8px;text-align:center}
+.task-summary-stat .tss-num{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.task-summary-stat .tss-label{font-size:11px;font-weight:600;color:var(--text-muted);margin-top:2px}
+.task-summary-stat.missed .tss-num{color:var(--danger)}
+.task-summary-stat.completed .tss-num{color:var(--success)}
+@media(max-width:520px){.task-summary-grid{grid-template-columns:repeat(2,1fr)}}
 .assignee-badge{font-size:10px;font-weight:700;background:var(--surface-muted);color:var(--text-muted);padding:1px 6px;border-radius:3px;margin-left:4px}
 .assign-multi{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);min-height:40px}
 .assign-multi-opt{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:12px;font-weight:600;cursor:pointer;user-select:none}
@@ -324,10 +339,6 @@ body.danger-mode .danger-banner{display:block}
     <div class="topbar-center">Chomp<span>Chores</span> ⚡</div>
     <div class="topbar-right">
       <div class="sync-dot" id="syncDot" style="background:#22c55e" title="Saved"></div>
-      <div class="view-as" id="viewAsWrap">
-        <label for="viewAsSelect">Impersonate</label>
-        <select id="viewAsSelect" onchange="onImpersonateChange()"></select>
-      </div>
       <div class="mode-switch" id="modeSwitch">
         <button type="button" id="modeChoresBtn" onclick="switchAppMode('chore')">Chores</button>
         <button type="button" id="modeTasksBtn" onclick="switchAppMode('task')">Tasks</button>
@@ -342,8 +353,15 @@ body.danger-mode .danger-banner{display:block}
   <!-- CHORE SHELL -->
   <div id="choreShell">
     <div class="bank-card" id="bankCard">
+      <div class="bank-label-row">
+        <div class="bank-label">Point Bank</div>
+        <div class="view-as" id="viewAsWrap">
+          <label for="viewAsSelect">Impersonate</label>
+          <select id="viewAsSelect" onchange="onImpersonateChange()"></select>
+        </div>
+      </div>
       <div class="bank-top">
-        <div><div class="bank-label">Point Bank</div><div class="bank-pts zero" id="bankPts">0</div><div class="bank-stat" id="bankSub">Start checking off chores!</div></div>
+        <div><div class="bank-pts zero" id="bankPts">0</div><div class="bank-stat" id="bankSub">Start checking off chores!</div></div>
         <div class="bank-right"><div class="bank-stat" id="bankProgress">—</div><div class="bank-stat" style="font-size:11px;color:var(--text-hint);margin-top:4px" id="bankDate"></div></div>
       </div>
       <div class="bank-target-bar">
@@ -501,7 +519,7 @@ body.danger-mode .danger-banner{display:block}
         <div class="setting-row"><div class="setting-body"><div class="setting-label">Daily target (pts)</div><div class="setting-desc">Minimum points needed each day</div></div><div class="setting-control"><input type="number" id="setTarget" min="0.01" step="0.01" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('dailyTarget','setTarget')">Save</button></div></div>
         <div class="setting-row"><div class="setting-body"><div class="setting-label">Penalty if missed (pts)</div><div class="setting-desc">Deducted at midnight if target not hit</div></div><div class="setting-control"><input type="number" id="setPenalty" min="0" step="0.01" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="saveSetting('penaltyPts','setPenalty')">Save</button></div></div>
         <div class="setting-row"><div class="setting-body"><div class="setting-label">Change parent PIN</div><div class="setting-desc">Default PIN is 1234</div></div><div class="setting-control"><button class="btn btn-sm btn-warning" onclick="showChangePinFlow()">Change PIN</button></div></div>
-        <div class="setting-row"><div class="setting-body"><div class="setting-label">Adjust bank manually</div><div class="setting-desc">Positive to add, negative to deduct</div></div><div class="setting-control"><input type="number" id="adjustAmt" placeholder="±pts" step="0.01" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="adjustPoints()">Apply</button></div></div>
+        <div class="setting-row"><div class="setting-body"><div class="setting-label">Adjust bank manually</div><div class="setting-desc">Positive to add, negative to deduct</div></div><div class="setting-control"><input type="text" id="adjustNote" placeholder="Reason (optional)" style="width:140px;flex:1;min-width:100px"><input type="number" id="adjustAmt" placeholder="±pts" step="0.01" style="width:80px;text-align:center"><button class="btn btn-sm btn-primary" onclick="adjustPoints()">Apply</button></div></div>
       </div>
       <div class="section-hd" style="margin-top:1rem"><div class="section-title" style="color:var(--danger)">Danger zone</div></div>
       <div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -513,6 +531,22 @@ body.danger-mode .danger-banner{display:block}
   </div><!-- /choreShell -->
   <!-- TASK SHELL -->
   <div id="taskShell" style="display:none">
+    <div class="bank-card" id="taskSummaryCard">
+      <div class="bank-label-row">
+        <div class="bank-label">Summary</div>
+        <div class="view-as" id="viewAsWrapTask">
+          <label for="viewAsSelectTask">Impersonate</label>
+          <select id="viewAsSelectTask" onchange="onImpersonateChangeTask()"></select>
+        </div>
+      </div>
+      <div id="taskSummaryEmpty" class="bank-stat" style="display:none">Choose someone to impersonate</div>
+      <div class="task-summary-grid" id="taskSummaryGrid">
+        <div class="task-summary-stat"><div class="tss-num" id="tsTotal">0</div><div class="tss-label">Total</div></div>
+        <div class="task-summary-stat completed"><div class="tss-num" id="tsCompleted">0</div><div class="tss-label">Completed</div></div>
+        <div class="task-summary-stat"><div class="tss-num" id="tsPending">0</div><div class="tss-label">Pending</div></div>
+        <div class="task-summary-stat missed"><div class="tss-num" id="tsMissed">0</div><div class="tss-label">Missed</div></div>
+      </div>
+    </div>
     <div class="nav">
       <button class="nav-btn active" id="tnav-tasks" onclick="showTaskTab('tasks')">📋 Tasks</button>
       <button class="nav-btn" id="tnav-calendar" onclick="showTaskTab('calendar')">📅 Calendar</button>
@@ -759,15 +793,12 @@ function fillViewAsSelect(){
   const withChores=new Set((S.chores||[]).map(c=>c.userId).filter(Boolean));
   (S.users||[]).forEach(u=>{if(withChores.has(u.id)&&!users.find(x=>x.id===u.id))users.push(u);});
   sel.innerHTML='<option value="">— Select a user —</option>'+users.map(u=>`<option value="${u.id}">${esc(cap(u.username))}</option>`).join('');
-  sel.value=impersonateUserId||'';
+  sel.value=users.some(u=>u.id===impersonateUserId)?impersonateUserId:'';
 }
 function onImpersonateChange(){
   const sel=document.getElementById('viewAsSelect');
   impersonateUserId=sel&&sel.value?sel.value:null;
-  try{
-    if(impersonateUserId)sessionStorage.setItem('chomp_viewas',impersonateUserId);
-    else sessionStorage.removeItem('chomp_viewas');
-  }catch(e){}
+  persistImpersonation();
   fillAssignSelects();
   updateBank();
   if(activeTab==='dashboard')renderDashboard();
@@ -775,6 +806,36 @@ function onImpersonateChange(){
   else if(activeTab==='history')renderHistory();
   else if(activeTab==='calendar')renderCalendarTab();
   else if(activeTab==='manage')renderManage();
+}
+function taskCapableUsers(){
+  return (S.users||[]).filter(u=>userRoles(u).includes('task'));
+}
+function fillViewAsSelectTask(){
+  const wrap=document.getElementById('viewAsWrapTask');
+  const sel=document.getElementById('viewAsSelectTask');
+  if(!wrap||!sel)return;
+  const show=isAdmin();
+  wrap.classList.toggle('visible',!!show);
+  if(!show)return;
+  const users=taskCapableUsers();
+  const withTasks=new Set((S.tasks||[]).map(t=>t.userId).filter(Boolean));
+  (S.users||[]).forEach(u=>{if(withTasks.has(u.id)&&!users.find(x=>x.id===u.id))users.push(u);});
+  sel.innerHTML='<option value="">— Select a user —</option>'+users.map(u=>`<option value="${u.id}">${esc(cap(u.username))}</option>`).join('');
+  sel.value=users.some(u=>u.id===impersonateUserId)?impersonateUserId:'';
+}
+function onImpersonateChangeTask(){
+  const sel=document.getElementById('viewAsSelectTask');
+  impersonateUserId=sel&&sel.value?sel.value:null;
+  persistImpersonation();
+  renderTaskSummary();
+  if(activeTaskTab==='tasks'){renderTaskList();renderTaskCalDash();}
+  else if(activeTaskTab==='calendar')renderTaskCalendarTab();
+}
+function persistImpersonation(){
+  try{
+    if(impersonateUserId)sessionStorage.setItem('chomp_viewas',impersonateUserId);
+    else sessionStorage.removeItem('chomp_viewas');
+  }catch(e){}
 }
 function restoreImpersonation(){
   if(!isAdmin()){impersonateUserId=null;return;}
@@ -947,6 +1008,7 @@ function enterApp(){
   document.getElementById('userAvatar').textContent=currentUser.username.slice(0,2).toUpperCase();
   document.getElementById('userGreeting').textContent='Hey '+cap(currentUser.username)+'!';
   fillViewAsSelect();
+  fillViewAsSelectTask();
   fillAssignSelects();
   updateModeSwitchUI();
   const shell=primaryShell();
@@ -958,12 +1020,15 @@ function switchAppMode(mode, initial){
   if(mode==='task'){
     choreShell.style.display='none';
     taskShell.style.display='';
+    fillViewAsSelectTask();
+    renderTaskSummary();
     showTaskTab(activeTaskTab||'tasks');
     startReminderLoop();
     refreshCalendar();
   } else {
     taskShell.style.display='none';
     choreShell.style.display='';
+    fillViewAsSelect();
     midnightCheck(); scheduleNextMidnight(); updateBank();
     if(initial || activeTab==='dashboard') renderDashboard();
     else showTab(activeTab||'dashboard');
@@ -994,6 +1059,7 @@ function doLogout(){
   if(tvSession.active){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
   const sw=document.getElementById('modeSwitch'); if(sw) sw.classList.remove('visible');
   const vw=document.getElementById('viewAsWrap'); if(vw) vw.classList.remove('visible');
+  const vwt=document.getElementById('viewAsWrapTask'); if(vwt) vwt.classList.remove('visible');
   showLogin();
 }
 async function addUser(){
@@ -1078,7 +1144,7 @@ function getTodayHistory(uid){
 function logEntry(type,label,pts,uid){
   const h=getTodayHistory(uid);
   pts=round2(pts);
-  h.entries.push({type,label,pts,time:fmtTime()});
+  h.entries.push({type,label,pts,time:fmtTime(),ts:Date.now()});
   if(type==='chore'||type==='bonus')h.dailyEarned=round2(h.dailyEarned+Math.max(0,pts));
   if(type==='reward'||type==='penalty')h.dailySpent=round2(h.dailySpent+Math.abs(pts));
   purgeOldHistory();
@@ -1086,9 +1152,17 @@ function logEntry(type,label,pts,uid){
 }
 function logAdmin(type,label,detail=''){
   if(!S.adminLog)S.adminLog=[];
-  S.adminLog.unshift({type,label,detail,date:todayStr(),time:fmtTime()});
+  S.adminLog.unshift({type,label,detail,date:todayStr(),time:fmtTime(),ts:Date.now()});
   purgeOldHistory();
   save();
+}
+function entrySortTs(dateStr,e){
+  if(typeof e.ts==='number')return e.ts;
+  const m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((e.time||'').trim());
+  if(!m)return new Date(dateStr+'T00:00:00').getTime();
+  let h=parseInt(m[1],10);const min=parseInt(m[2],10);const ap=m[3].toUpperCase();
+  if(ap==='PM'&&h!==12)h+=12; if(ap==='AM'&&h===12)h=0;
+  const d=new Date(dateStr+'T00:00:00');d.setHours(h,min,0,0);return d.getTime();
 }
 function purgeOldHistory(){
   const cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
@@ -1233,9 +1307,30 @@ function showTaskTab(tab){
   const tmn=document.getElementById('tnav-manage');
   if(tmn) tmn.classList.remove('active');
   activeTaskTab=tab;
+  renderTaskSummary();
   if(tab==='tasks'){renderTaskList();renderTaskCalDash();}
   if(tab==='calendar')renderTaskCalendarTab();
   if(tab==='settings'){const sp=document.getElementById('soundPref');if(sp)sp.value=currentUser.soundPref||'on';}
+}
+function renderTaskSummary(){
+  const empty=document.getElementById('taskSummaryEmpty');
+  const grid=document.getElementById('taskSummaryGrid');
+  if(!empty||!grid)return;
+  if(!hasActiveView()){
+    empty.style.display='';empty.textContent=isAdmin()?'Choose someone to impersonate':'';
+    grid.style.display='none';
+    return;
+  }
+  empty.style.display='none';grid.style.display='';
+  const tasks=myTasks(),today=todayStr();
+  const total=tasks.length;
+  const completed=tasks.filter(t=>t.status==='completed').length;
+  const pending=tasks.filter(t=>t.status==='pending').length;
+  const missed=tasks.filter(t=>t.eta&&t.eta<today&&t.status==='pending').length;
+  document.getElementById('tsTotal').textContent=total;
+  document.getElementById('tsCompleted').textContent=completed;
+  document.getElementById('tsPending').textContent=pending;
+  document.getElementById('tsMissed').textContent=missed;
 }
 
 // ── DASHBOARD (chore) ──
@@ -1299,12 +1394,12 @@ function toggleChore(id){
   if(!c.group){
     p.checked[id]=!was;addToBank(was?-c.pts:c.pts,uid);
     if(!was){logEntry('chore',c.name,c.pts,uid);if(soundOn())playChime();}
-    else{const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:c.name+' (unchecked)',pts:round2(-c.pts),time:fmtTime()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-c.pts));save();}
+    else{const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:c.name+' (unchecked)',pts:round2(-c.pts),time:fmtTime(),ts:Date.now()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-c.pts));save();}
     toast(`${was?'−':'+'}${fmtPts(c.pts)} pts — ${c.name}`,was?'err':'ok');
   } else {
     const wasDone=isGroupDone(c.group,list,uid);p.checked[id]=!was;const nowDone=isGroupDone(c.group,list,uid);
     if(!wasDone&&nowDone){const gp=groupPts(c.group,list);addToBank(gp,uid);logEntry('chore',`Group: ${c.group}`,gp,uid);if(soundOn())playChime();toast(`Group "${c.group}" complete! +${fmtPts(gp)} pts 🎉`,'ok');}
-    else if(wasDone&&!nowDone){const gp=groupPts(c.group,list);addToBank(-gp,uid);const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:`Group: ${c.group} (incomplete)`,pts:round2(-gp),time:fmtTime()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-gp));save();toast(`Group incomplete — −${fmtPts(gp)} pts`,'err');}
+    else if(wasDone&&!nowDone){const gp=groupPts(c.group,list);addToBank(-gp,uid);const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:`Group: ${c.group} (incomplete)`,pts:round2(-gp),time:fmtTime(),ts:Date.now()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-gp));save();toast(`Group incomplete — −${fmtPts(gp)} pts`,'err');}
     else toast(was?'Unchecked':`Checked ✓ — finish all "${c.group}" for pts`,'info');
   }
   save();updateBank();renderDashboard();
@@ -1314,7 +1409,7 @@ function toggleOneTime(id){
   const uid=t.userId||activeUserId();
   t.done=!t.done;
   if(t.done){addToBank(t.pts,uid);logEntry('chore',`📌 ${t.name}`,t.pts,uid);if(soundOn())playChime();toast(`+${fmtPts(t.pts)} pts — ${t.name}`,'ok');}
-  else{addToBank(-t.pts,uid);const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:`📌 ${t.name} (unchecked)`,pts:round2(-t.pts),time:fmtTime()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-t.pts));save();toast(`−${fmtPts(t.pts)} pts`,'err');}
+  else{addToBank(-t.pts,uid);const h=getTodayHistory(uid);h.entries.push({type:'chore-undo',label:`📌 ${t.name} (unchecked)`,pts:round2(-t.pts),time:fmtTime(),ts:Date.now()});h.dailyEarned=round2(Math.max(0,h.dailyEarned-t.pts));save();toast(`−${fmtPts(t.pts)} pts`,'err');}
   save();updateBank();renderDashboard();
 }
 
@@ -1567,20 +1662,22 @@ function renderHistory(){
       const rows=rewardEntries.map(e=>`<div class="history-reward-row"><span class="history-reward-name">🎁 ${esc(e.label)}</span><span class="history-reward-pts">−${fmtPts(Math.abs(e.pts))} pts</span></div>`).join('');
       rewardsSummary=`<div class="history-rewards-summary"><div class="history-rewards-title">🎁 ${rewardEntries.length} reward${rewardEntries.length!==1?'s':''} claimed · ${fmtPts(totalSpent)} pts spent</div>${rows}</div>`;
     }
-    // Activity entries HTML
-    const actHTML=day.entries.map(e=>`<div class="history-entry">
-      <div class="history-entry-icon ${TYPE_CSS[e.type]||'hi-chore'}">${TYPE_ICON[e.type]||'•'}</div>
-      <div class="history-entry-body"><div class="history-entry-name">${esc(e.label)}</div><div class="history-entry-time">${e.time} · ${TYPE_LABEL[e.type]||e.type}</div></div>
-      <div class="history-entry-pts ${e.pts>=0?'pos':'neg'}">${e.pts!==0?(e.pts>=0?'+':'')+fmtPts(e.pts)+' pts':''}</div>
-    </div>`).join('');
-    // Admin entries HTML
-    const admHTML=day.adminEntries.map(e=>`<div class="history-entry admin-entry">
+    // Merge activity + admin entries into one unified timeline, newest first
+    const combined=[
+      ...day.entries.map(e=>({...e,__admin:false})),
+      ...day.adminEntries.map(e=>({...e,__admin:true}))
+    ].sort((a,b)=>entrySortTs(day.date,b)-entrySortTs(day.date,a));
+    const timelineHTML=combined.map(e=>e.__admin?`<div class="history-entry admin-entry">
       <div class="history-entry-icon hi-admin" style="font-size:14px">${ADMIN_ICON[e.type]||'⚙️'}</div>
       <div class="history-entry-body">
         <div class="history-entry-name">${esc(e.label)} <span class="admin-badge">ADMIN</span></div>
         <div class="history-entry-time">${e.time} · ${ADMIN_LABEL[e.type]||e.type}${e.detail?` · ${esc(e.detail)}`:''}</div>
       </div>
       <div></div>
+    </div>`:`<div class="history-entry">
+      <div class="history-entry-icon ${TYPE_CSS[e.type]||'hi-chore'}">${TYPE_ICON[e.type]||'•'}</div>
+      <div class="history-entry-body"><div class="history-entry-name">${esc(e.label)}</div><div class="history-entry-time">${e.time} · ${TYPE_LABEL[e.type]||e.type}</div></div>
+      <div class="history-entry-pts ${e.pts>=0?'pos':'neg'}">${e.pts!==0?(e.pts>=0?'+':'')+fmtPts(e.pts)+' pts':''}</div>
     </div>`).join('');
     const adminCount=day.adminEntries.length;
     return `<div class="history-day">
@@ -1594,8 +1691,7 @@ function renderHistory(){
       </div>
       <div class="history-entries ${di===0?'open':''}" id="hday-${di}">
         ${rewardsSummary}
-        ${actHTML||(!admHTML?'<div class="history-entry" style="color:var(--text-hint)">No activity entries</div>':'')}
-        ${admHTML}
+        ${timelineHTML||'<div class="history-entry" style="color:var(--text-hint)">No activity entries</div>'}
       </div>
     </div>`;
   }).join('');
@@ -1675,14 +1771,16 @@ function renderTaskCalendarTab(){
 
 // ── TASK USER ──
 const PRI_ORDER={high:0,medium:1,low:2};
-function myTasks(){return(S.tasks||[]).filter(t=>t.userId===currentUser.id);}
+function myTasks(){const tuid=activeUserId();if(!tuid)return[];return(S.tasks||[]).filter(t=>t.userId===tuid);}
 function addTask(){
+  const tuid=activeUserId();
+  if(!tuid){toast('Select a user first','err');return;}
   const name=document.getElementById('tName').value.trim();if(!name){toast('Enter task name','err');return;}
   const eta=document.getElementById('tEta').value;
-  const task={id:uid(),userId:currentUser.id,name,desc:document.getElementById('tDesc').value.trim(),priority:document.getElementById('tPriority').value||'medium',status:'pending',dateAdded:todayStr(),eta:eta||null,reminder:document.getElementById('tReminder').value||'',alarm:document.getElementById('tAlarm').value||'',completedAt:null};
+  const task={id:uid(),userId:tuid,name,desc:document.getElementById('tDesc').value.trim(),priority:document.getElementById('tPriority').value||'medium',status:'pending',dateAdded:todayStr(),eta:eta||null,reminder:document.getElementById('tReminder').value||'',alarm:document.getElementById('tAlarm').value||'',completedAt:null};
   if(!S.tasks)S.tasks=[];S.tasks.push(task);
   document.getElementById('tName').value='';document.getElementById('tDesc').value='';document.getElementById('tEta').value='';document.getElementById('tReminder').value='';document.getElementById('tAlarm').value='';
-  save();renderTaskList();toast(`"${name}" added!`,'ok');scheduleAlarm(task);
+  save();renderTaskList();renderTaskSummary();toast(`"${name}" added!`,'ok');scheduleAlarm(task);
 }
 function removeTask(id){if(!confirm('Remove?'))return;S.tasks=(S.tasks||[]).filter(x=>x.id!==id);save();renderTaskList();toast('Removed','info');}
 function setTaskStatus(id,status){const t=(S.tasks||[]).find(x=>x.id===id);if(!t)return;t.status=status;if(status==='completed')t.completedAt=new Date().toISOString();save();renderTaskList();if(status==='completed'&&soundOn())playChime();toast(status==='completed'?'✅ Done':status==='deferred'?'⏸ Deferred':'↩ Pending','ok');}
@@ -1863,11 +1961,14 @@ function adjustPoints(){
   const raw=document.getElementById('adjustAmt').value;
   const a=round2(parseFloat(raw));
   if(raw===''||isNaN(a)||a===0){toast('Enter a non-zero number','err');return;}
+  const noteEl=document.getElementById('adjustNote');
+  const note=(noteEl?.value||'').trim();
   const uid=activeUserId();
   addToBank(a,uid);
-  logEntry('bonus',`Manual: ${a>0?'+':''}${fmtPts(a)} pts`,a,uid);
-  logAdmin('setting-change',`Bank manually adjusted (${usernameById(uid)})`,`${a>0?'+':''}${fmtPts(a)} pts, new balance: ${fmtPts(prog(uid).points)}`);
-  document.getElementById('adjustAmt').value='';save();updateBank();toast(`${a>0?'+':''}${fmtPts(a)} pts applied`,'ok');
+  const label=`Manual: ${a>0?'+':''}${fmtPts(a)} pts${note?` — ${note}`:''}`;
+  logEntry('bonus',label,a,uid);
+  logAdmin('setting-change',`Bank manually adjusted (${usernameById(uid)})`,`${a>0?'+':''}${fmtPts(a)} pts, new balance: ${fmtPts(prog(uid).points)}${note?` · "${note}"`:''}`);
+  document.getElementById('adjustAmt').value='';if(noteEl)noteEl.value='';save();updateBank();toast(`${a>0?'+':''}${fmtPts(a)} pts applied`,'ok');
 }
 
 // ── RESET / CLEAR ──
@@ -1880,7 +1981,7 @@ function resetDay(){
   chores.filter(c=>!c.group&&p.checked[c.id]).forEach(c=>{addToBank(-c.pts,uid);});
   groups(chores).filter(g=>isGroupDone(g,chores,uid)).forEach(g=>{addToBank(-groupPts(g,chores),uid);});
   myOneTimes().filter(t=>t.date===todayStr()&&t.done).forEach(t=>{addToBank(-t.pts,uid);t.done=false;});
-  const h=getTodayHistory(uid);h.entries.push({type:'reset',label:'Day manually reset',pts:0,time:fmtTime()});
+  const h=getTodayHistory(uid);h.entries.push({type:'reset',label:'Day manually reset',pts:0,time:fmtTime(),ts:Date.now()});
   logAdmin('setting-change','Day manually reset',`${usernameById(uid)} on ${todayStr()}`);
   p.checked={};p.lastResetDate=todayStr();save();updateBank();renderDashboard();toast('Day reset','info');
 }
@@ -1926,7 +2027,7 @@ function midnightCheck(){
         addToBank(-penalty,uid);
         let prev=p.history.find(x=>x.date===p.lastResetDate);
         if(!prev){prev={date:p.lastResetDate,entries:[],dailyEarned:0,dailySpent:0,penalty:0};p.history.unshift(prev);}
-        prev.entries.push({type:'penalty',label:`Target missed (${fmtPts(earned)}/${fmtPts(target)} pts)`,pts:round2(-penalty),time:'23:59'});
+        prev.entries.push({type:'penalty',label:`Target missed (${fmtPts(earned)}/${fmtPts(target)} pts)`,pts:round2(-penalty),time:'23:59',ts:new Date(p.lastResetDate+'T23:59:00').getTime()});
         prev.penalty=round2((prev.penalty||0)+penalty);
       }
     }

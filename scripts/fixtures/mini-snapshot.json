@@ -1,0 +1,62 @@
+{
+  "users": [
+    {
+      "id": "legacy-maahira",
+      "username": "maahira",
+      "roles": ["chore"],
+      "passwordHash": "x"
+    },
+    {
+      "id": "legacy-admin",
+      "username": "admin",
+      "roles": ["admin"],
+      "passwordHash": "y"
+    }
+  ],
+  "chores": [
+    {
+      "id": "c1",
+      "name": "Make Bed",
+      "pts": 1,
+      "group": null,
+      "userId": "legacy-maahira"
+    }
+  ],
+  "rewards": [
+    {
+      "id": "r1",
+      "name": "TV",
+      "type": "timer",
+      "redeemType": "persistent",
+      "timerPts": 10,
+      "timerHours": 1,
+      "cost": 0,
+      "userId": "legacy-maahira",
+      "timesUsed": 0
+    }
+  ],
+  "oneTimeTasks": [],
+  "tasks": [],
+  "calFeeds": [],
+  "adminLog": [],
+  "settings": { "dailyTarget": 15, "penaltyPts": 5, "pin": "1234" },
+  "userProgress": {
+    "legacy-maahira": {
+      "points": 0,
+      "checked": { "c1": true },
+      "lastResetDate": "2026-08-05",
+      "history": [
+        {
+          "date": "2026-08-05",
+          "dailyEarned": 1,
+          "dailySpent": 0,
+          "penalty": 0,
+          "entries": [
+            { "type": "chore", "label": "Make Bed", "pts": 1, "time": "3:00 PM" }
+          ]
+        }
+      ]
+    }
+  },
+  "userScoped": true
+}

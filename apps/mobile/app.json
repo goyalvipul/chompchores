@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "ChompChores",
+    "slug": "chompchores",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "chompchores",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chompchores.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.chompchores.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#6c47e8"
+      }
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "replace-after-eas-init"
+      }
+    }
+  }
+}

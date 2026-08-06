@@ -20,8 +20,23 @@ function readData() {
   catch (e) { console.error('[db] read error:', e.message); }
   return null;
 }
+const BACKUP_DIR   = process.env.BACKUP_DIR || path.join(path.dirname(DATA_FILE), 'backups');
+const BACKUP_KEEP   = 30; // rolling window of automatic pre-write snapshots
+
+function rotateBackup() {
+  try {
+    if (!fs.existsSync(DATA_FILE)) return;
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    fs.copyFileSync(DATA_FILE, path.join(BACKUP_DIR, `data.${stamp}.json`));
+    const files = fs.readdirSync(BACKUP_DIR).filter(f => f.startsWith('data.')).sort();
+    while (files.length > BACKUP_KEEP) fs.unlinkSync(path.join(BACKUP_DIR, files.shift()));
+  } catch (e) { console.error('[db] backup error:', e.message); }
+}
+
 function writeData(obj) {
   try {
+    rotateBackup(); // snapshot the previous good state before every overwrite
     const tmp = DATA_FILE + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(obj, null, 2), 'utf8');
     fs.renameSync(tmp, DATA_FILE);
@@ -74,13 +89,17 @@ const server = http.createServer(async (req, res) => {
 
   // POST /data
   if (req.method === 'POST' && url === '/data') {
-    try { const body = await parseBody(req); return json(res, writeData(body)?200:500, {ok:writeData(body)}); }
+    try {
+      const body = await parseBody(req);
+      const ok = writeData(body);
+      return json(res, ok ? 200 : 500, { ok });
+    }
     catch (e) { return json(res, 400, {ok:false,error:'invalid JSON'}); }
   }
 
   // DELETE /data
   if (req.method === 'DELETE' && url === '/data') {
-    try { if (fs.existsSync(DATA_FILE)) fs.unlinkSync(DATA_FILE); } catch(e) {}
+    try { rotateBackup(); if (fs.existsSync(DATA_FILE)) fs.unlinkSync(DATA_FILE); } catch(e) {}
     return json(res, 200, {ok:true});
   }
 

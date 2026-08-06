@@ -4,4 +4,16 @@ data.json.tmp
 *.tmp
 node_modules/
 .env
+.env.*
+!.env.example
 .DS_Store
+exports/**
+!exports/.gitkeep
+apps/mobile/.expo/
+apps/mobile/dist/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+supabase/.branches
+supabase/.temp

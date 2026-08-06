@@ -1,0 +1,25 @@
+# Minimal Supabase CLI config. Create a NEW project — never point this at kids' live JSON.
+
+project_id = "chompchores"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:8081"
+
+[functions.midnight_reset]
+verify_jwt = false
+
+[functions.ical_proxy]
+verify_jwt = true

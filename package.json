@@ -1,0 +1,10 @@
+{
+  "name": "chompchores",
+  "private": true,
+  "description": "Home Docker JSON app + Supabase/Expo path for App Store / Play Store",
+  "scripts": {
+    "mobile": "npm --prefix apps/mobile start",
+    "import-json": "npm --prefix scripts run import-json --",
+    "domain:test": "npm --prefix packages/domain test"
+  }
+}
