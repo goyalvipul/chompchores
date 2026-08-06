@@ -20,14 +20,17 @@ Sign in with the Supabase Auth **email/password** (not the old username login).
 
 1. Connect this GitHub repo in Cloudflare Pages.
 2. Build settings:
-   - **Root directory:** leave empty (repo root) *or* set to `/`
-   - **Build command:** `npm run pwa:config`
+   - **Framework preset:** None
+   - **Build command:** leave **empty** (runtime Function serves `/config.js`)
    - **Build output directory:** `apps/web-pwa`
-3. **Environment variables** (Settings → Environment variables):
+   - **Root directory:** leave empty / `/`
+3. **Variables and secrets** (Production) — already the right place:
    - `SUPABASE_URL` = `https://YOUR_REF.supabase.co`
    - `SUPABASE_ANON_KEY` = your anon or publishable key  
-   (`config.js` is gitignored; the build writes it from these vars.)
+   These are read at **runtime** by `functions/config.js.js` (not during build).
 4. Deploy → open the HTTPS URL → Add to Home Screen on phone.
+
+Locally you still use a gitignored `config.js` (`cp config.example.js config.js`).
 
 ## Data model
 
