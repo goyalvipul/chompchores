@@ -1,41 +1,31 @@
 # ChompChores Web PWA — full UI clone
 
-This is a **full port** of the live `index.html` UI (Dashboard, Rewards, History, Calendar, Manage, Tasks shell, PIN, Impersonate, etc.) backed by **Supabase** instead of Docker `/data`.
+Full port of the live `index.html` UI, backed by Supabase. The home kids Docker app stays untouched.
 
-The home kids Docker app is **not** used and must stay untouched.
-
-## Setup
-
-See [docs/PWA_SETUP.md](../../docs/PWA_SETUP.md) and:
+## Local
 
 ```bash
-# Copy config.example.js → config.js and fill Supabase URL + anon/publishable key
-cp config.example.js config.js
-npm run pwa   # from repo root → http://localhost:4173
+# from repo root
+npm run pwa
+# http://localhost:4173
 ```
 
-Sign in with the Supabase Auth **email/password** (not the old username login).
+Sign in with Supabase Auth **email/password**.
+
+`config.js` contains the **publishable/anon** key only (meant for browsers). Never put the `service_role` key in this file.
 
 ## Deploy on Cloudflare Pages
 
-1. Connect this GitHub repo in Cloudflare Pages.
+1. Connect this GitHub repo.
 2. Build settings:
    - **Framework preset:** None
-   - **Build command:** leave **empty** (runtime Function serves `/config.js`)
+   - **Build command:** leave **empty**
    - **Build output directory:** `apps/web-pwa`
-   - **Root directory:** leave empty / `/`
-3. **Variables and secrets** (Production) — already the right place:
-   - `SUPABASE_URL` = `https://YOUR_REF.supabase.co`
-   - `SUPABASE_ANON_KEY` = your anon or publishable key  
-   These are read at **runtime** by repo-root [`functions/config.js.js`](../../functions/config.js.js) (not during build).
-4. Deploy → open `https://YOUR-SITE.pages.dev/config.js` — you should see your Supabase URL in plain JS (not the HTML app page).
-5. Then open the site root and sign in.
+   - **Root directory:** empty / `/`
+3. Deploy → open the site → sign in.
 
-Locally you still use a gitignored `config.js` (`cp config.example.js config.js`).
+No Cloudflare env vars required for basic deploy (`config.js` is committed).
 
 ## Data model
 
-Household JSON document in `household_app_state` (same shape as live `S`), loaded/saved via:
-
-- `get_app_state()`
-- `save_app_state(state, expected_rev)` with revision conflict protection
+Household JSON in `household_app_state` via `get_app_state` / `save_app_state`.

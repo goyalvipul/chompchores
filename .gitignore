@@ -12,7 +12,7 @@ data.json.tmp
 .env.*
 !.env.example
 !**/.env.example
-apps/web-pwa/config.js
+# config.js holds publishable/anon key only (public client key + RLS). Never put service_role here.
 apps/web-pwa/config.local.js
 **/credentials.json
 **/serviceAccount*.json

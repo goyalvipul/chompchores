@@ -61,7 +61,7 @@ Pick one:
 
 | Host | What you do |
 |---|---|
-| **Cloudflare Pages** | Connect Git → **Build command** empty → **Output** `apps/web-pwa`. Set **Variables and secrets** `SUPABASE_URL` + `SUPABASE_ANON_KEY` (served at runtime via repo-root [`functions/config.js.js`](../functions/config.js.js)). Details in [`apps/web-pwa/README.md`](../apps/web-pwa/README.md). |
+| **Cloudflare Pages** | Connect Git → **Build command** empty → **Output** `apps/web-pwa`. `apps/web-pwa/config.js` (publishable/anon key) is committed — no CF env vars required. Details in [`apps/web-pwa/README.md`](../apps/web-pwa/README.md). |
 | **Netlify** | Same folder; `netlify.toml` is present — still need a build step or env injection for `config.js` |
 | **Vercel** | Same; `vercel.json` is present — same `config.js` note |
 
