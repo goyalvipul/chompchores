@@ -562,9 +562,9 @@ body.danger-mode .danger-banner{display:block}
             <div class="role-checks" id="uRoleChecks">
               <label class="role-check"><input type="checkbox" id="uRoleChore" checked><div class="role-check-body"><div class="role-check-title">Chore user</div><div class="role-check-desc">Daily chores, points, rewards</div></div></label>
               <label class="role-check"><input type="checkbox" id="uRoleTask"><div class="role-check-body"><div class="role-check-title">Task scheduler</div><div class="role-check-desc">Personal tasks and reminders</div></div></label>
-              <label class="role-check"><input type="checkbox" id="uRoleAdmin"><div class="role-check-body"><div class="role-check-title">Admin</div><div class="role-check-desc">Full manage access without PIN. Can combine with Chore or Task (not both).</div></div></label>
+              <label class="role-check"><input type="checkbox" id="uRoleAdmin"><div class="role-check-body"><div class="role-check-title">Admin</div><div class="role-check-desc">Full access to Manage, Chores & Tasks (no PIN). Does not need Chore/Task roles.</div></div></label>
             </div>
-            <div class="form-hint">Allowed: Chore, Task, Admin, Chore+Admin, Task+Admin. Not Chore+Task.</div>
+            <div class="form-hint">Allowed: Admin (alone), Chore, Task, Admin+Chore, Admin+Task. Not Chore+Task.</div>
           </div>
         </div>
         <div class="form-row"><button class="btn btn-primary" onclick="addUser()" style="margin-left:auto">Add user</button></div>
@@ -704,12 +704,14 @@ function ensureCloudUserInState(){
   if(!S.users)S.users=[];
   let u=S.users.find(x=>x.id===cloudMe.id||(x.username||'').toLowerCase()===(cloudMe.username||'').toLowerCase());
   if(!u){
-    u={id:cloudMe.id,username:cloudMe.username,roles:cloudMe.roles||['chore'],passwordHash:'',createdAt:new Date().toISOString(),soundPref:'on'};
+    // App-state is source of truth for roles once present — do not clobber on later loads
+    u={id:cloudMe.id,username:cloudMe.username,roles:cloudMe.roles||['admin'],passwordHash:'',createdAt:new Date().toISOString(),soundPref:'on'};
     S.users.push(u);return true;
   }
-  if(u.id!==cloudMe.id){u.id=cloudMe.id;return true;}
-  if(Array.isArray(cloudMe.roles)&&cloudMe.roles.length){u.roles=cloudMe.roles;return true;}
-  return false;
+  let changed=false;
+  if(u.id!==cloudMe.id){u.id=cloudMe.id;changed=true;}
+  // Never overwrite existing app-state roles from profiles (that was reverting Manage edits)
+  return changed;
 }
 async function loadFromServer(){
   if(!sb)throw new Error('Supabase not configured');
@@ -818,12 +820,14 @@ function isAdmin(){return hasRole('current','admin');}
 function canManage(){return isAdmin()||parentUnlocked;}
 function primaryShell(u){
   const roles=userRoles(u||currentUser);
+  // Admin can use both shells; default to chores unless task-only (non-admin)
+  if(roles.includes('admin')) return 'chore';
   if(roles.includes('task')&&!roles.includes('chore')) return 'task';
-  return 'chore'; // chore, chore+admin, admin-only
+  return 'chore';
 }
 function needsModeSwitcher(){
-  // Admin-only or task+admin (not chore): can flip between shells
-  return isAdmin()&&!hasRole('current','chore');
+  // Admin always gets Chores/Tasks switcher (admin outranks other role combos)
+  return isAdmin();
 }
 function rolesLabel(roles){return roles.join(' · ');}
 function roleBadgesHTML(roles){
@@ -999,8 +1003,8 @@ function fillViewAsSelect(){
   wrap.classList.toggle('visible',!!show);
   updateBankControlsVisibility();
   if(!show)return;
-  const users=(S.users||[]).filter(u=>userRoles(u).includes('chore'));
-  // Also include any user who already has assigned chores
+  // Admins can impersonate anyone (including admin-only accounts)
+  const users=(S.users||[]).slice();
   const withChores=new Set((S.chores||[]).map(c=>c.userId).filter(Boolean));
   (S.users||[]).forEach(u=>{if(withChores.has(u.id)&&!users.find(x=>x.id===u.id))users.push(u);});
   sel.innerHTML='<option value="">— Select a user —</option>'+users.map(u=>`<option value="${u.id}">${esc(cap(u.username))}</option>`).join('');
@@ -1487,7 +1491,7 @@ function toggleEditUser(id){
     p.style.display='';
   }
 }
-function saveUserRoles(id){
+async function saveUserRoles(id){
   const u=S.users.find(x=>x.id===id);if(!u)return;
   const vr=readRoleChecks('ue-'+id+'-');
   if(!vr.ok){toast(vr.error,'err');return;}
@@ -1496,6 +1500,17 @@ function saveUserRoles(id){
   if(wasAdmin&&!willAdmin&&adminCount()<=1){toast("Can't remove Admin from the last Admin",'err');return;}
   const oldRoles=userRoles(u);
   u.roles=vr.roles; if('role' in u) delete u.role;
+  // Keep Supabase profiles/memberships in sync so roles survive reload
+  if(sb){
+    const {error}=await sb.rpc('update_member_roles',{p_user_id:id,p_roles:vr.roles});
+    if(error){
+      u.roles=oldRoles;
+      toast(error.message||'Could not save roles','err');
+      renderManage();
+      return;
+    }
+    if(cloudMe&&cloudMe.id===id)cloudMe.roles=vr.roles.slice();
+  }
   logAdmin('setting-change',`Roles updated: "${u.username}"`,`${rolesLabel(oldRoles)} → ${rolesLabel(vr.roles)}`);
   save();
   if(currentUser&&currentUser.id===id){
