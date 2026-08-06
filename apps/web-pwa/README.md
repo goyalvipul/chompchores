@@ -10,9 +10,13 @@ npm run pwa
 # http://localhost:4173
 ```
 
-Sign in with Supabase Auth **email/password**.
+Use **Sign up** (new household admin) or **Sign in** (email or username + household).  
+Kids added in Manage sign in with **username + household** (no email verify).  
+See [`docs/AUTH_EMAIL.md`](../../docs/AUTH_EMAIL.md) for confirmation email setup.
 
 `config.js` contains the **publishable/anon** key only (meant for browsers). Never put the `service_role` key in this file.
+
+Local Docker kids app login is unchanged (username/password on `data.json`).
 
 ## Deploy on Cloudflare Pages
 

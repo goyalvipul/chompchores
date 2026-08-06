@@ -37,21 +37,21 @@ npx supabase db push        # applies migrations including app_events
 
 Or: Supabase Dashboard → SQL → paste/run migration files in order under `supabase/migrations/`.
 
-### 3) Create first Auth user + demo household (required for login)
+### 3) Auth signup (recommended) or demo seed
 
-Supabase Auth emails are used (not the legacy username login).
+**Preferred:** use **Sign up** in the PWA (Name, Username, Household, Email, Phone, Password).  
+Configure confirm-email + templates as in [`docs/AUTH_EMAIL.md`](AUTH_EMAIL.md), then confirm the link and sign in.
 
-1. Dashboard → **Authentication** → **Users** → **Add user**  
-   - Email + password (e.g. `you@example.com`)  
-   - Confirm email if your project requires it (disable “Confirm email” under Auth settings for fastest testing)
-2. Copy the user’s **UUID**
-3. SQL Editor → open `supabase/seed_demo_household.sql`  
-   - Replace `auth_user_id` with that UUID  
-   - Run it  
-4. SQL Editor → run `supabase/seed_app_state_for_existing.sql`  
-   This loads the **full app document** (`household_app_state`) so the PWA clone has chores/rewards/users like the live UI.
+**Optional demo seed** (empty project / testing only):
 
-You should then be able to sign into the PWA with that email/password.
+1. Dashboard → **Authentication** → **Users** → **Add user** (email + password; confirm if required)
+2. Copy UUID → run `supabase/seed_demo_household.sql` then `seed_app_state_for_existing.sql`
+
+Deploy member creation for testing kids login:
+
+```bash
+npx supabase functions deploy create_member
+```
 
 ### 4) Host the static PWA for $0 (required for phones + service workers)
 
