@@ -64,13 +64,14 @@ body.danger-mode{animation:danger-pulse 3s ease-in-out infinite}
 .sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .4s}
 .bank-card{background:var(--surface);border-radius:16px;border:1.5px solid var(--border);padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow);transition:border-color .3s,background .3s}
 .bank-card.negative{border-color:var(--danger-border);background:var(--danger-light)}
-.bank-top{display:flex;align-items:flex-start;justify-content:space-between}
-.bank-label-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap;row-gap:6px}
-.bank-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-hint);line-height:1.2;padding-top:0;margin-top:0}
-.bank-pts{font-size:48px;font-weight:800;letter-spacing:-3px;line-height:1;transition:color .3s}
+.bank-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bank-left{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.bank-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-hint);line-height:1.2;margin:0}
+.bank-pts{font-size:48px;font-weight:800;letter-spacing:-3px;line-height:1;margin:0;transition:color .3s}
 .bank-pts.positive{color:var(--success)}.bank-pts.negative{color:var(--danger)}.bank-pts.zero{color:var(--text-hint)}
-.bank-right{text-align:right}
-.bank-stat{font-size:13px;color:var(--text-muted);line-height:1.6}
+.bank-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.bank-stat{font-size:13px;color:var(--text-muted);line-height:1.35;margin:0}
+.bank-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-top:2px}
 .bank-stat strong{color:var(--text);font-weight:600}
 .bank-target-bar{margin-top:1rem}
 .bank-target-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px}
@@ -396,22 +397,28 @@ body.danger-mode .danger-banner{display:block}
   <!-- CHORE SHELL -->
   <div id="choreShell">
     <div class="bank-card" id="bankCard">
-      <div class="bank-label-row">
-        <div class="bank-label">Point Bank</div>
-        <div class="bank-controls" id="bankControls">
-          <div class="hh-switch" id="hhSwitchWrap">
-            <label for="bankHouseholdSelect">Household</label>
-            <select id="bankHouseholdSelect" onchange="onBankHouseholdChange()"></select>
+      <div class="bank-header">
+        <div class="bank-left">
+          <div class="bank-label">Point Bank</div>
+          <div class="bank-pts zero" id="bankPts">0</div>
+          <div class="bank-stat" id="bankSub">Start checking off chores!</div>
+        </div>
+        <div class="bank-right">
+          <div class="bank-controls" id="bankControls">
+            <div class="hh-switch" id="hhSwitchWrap">
+              <label for="bankHouseholdSelect">Household</label>
+              <select id="bankHouseholdSelect" onchange="onBankHouseholdChange()"></select>
+            </div>
+            <div class="view-as" id="viewAsWrap">
+              <label for="viewAsSelect">Impersonate</label>
+              <select id="viewAsSelect" onchange="onImpersonateChange()"></select>
+            </div>
           </div>
-          <div class="view-as" id="viewAsWrap">
-            <label for="viewAsSelect">Impersonate</label>
-            <select id="viewAsSelect" onchange="onImpersonateChange()"></select>
+          <div class="bank-meta">
+            <div class="bank-stat" id="bankProgress">—</div>
+            <div class="bank-stat" style="font-size:11px;color:var(--text-hint)" id="bankDate"></div>
           </div>
         </div>
-      </div>
-      <div class="bank-top">
-        <div><div class="bank-pts zero" id="bankPts">0</div><div class="bank-stat" id="bankSub">Start checking off chores!</div></div>
-        <div class="bank-right"><div class="bank-stat" id="bankProgress">—</div><div class="bank-stat" style="font-size:11px;color:var(--text-hint);margin-top:4px" id="bankDate"></div></div>
       </div>
       <div class="bank-target-bar">
         <div class="bank-target-label"><span>Daily target</span><span id="targetLabel"><strong>0</strong> / 15 pts</span></div>
