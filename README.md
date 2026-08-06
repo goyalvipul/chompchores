@@ -7,9 +7,10 @@ Family chore + task app.
 | Track | Path | Status |
 |---|---|---|
 | **Kids live app** | Root [`index.html`](index.html) + [`server.js`](server.js) + Docker | **Do not break** — JSON volume is production for the household |
-| **Store path** | [`supabase/`](supabase/) + [`apps/mobile/`](apps/mobile/) | New Postgres + Expo for App Store / Play Store |
+| **Web PWA (PMF)** | [`apps/web-pwa/`](apps/web-pwa/) + [`supabase/`](supabase/) | Static PWA → Supabase RPCs — see [docs/PWA_SETUP.md](docs/PWA_SETUP.md) |
+| **Native store path** | [`apps/mobile/`](apps/mobile/) | Expo — after PMF |
 
-See [docs/DATA_SAFETY.md](docs/DATA_SAFETY.md) and [docs/STORE_LAUNCH.md](docs/STORE_LAUNCH.md).
+See [docs/DATA_SAFETY.md](docs/DATA_SAFETY.md), [docs/PWA_SETUP.md](docs/PWA_SETUP.md), and [docs/STORE_LAUNCH.md](docs/STORE_LAUNCH.md).
 
 ## Legacy (home LAN)
 
@@ -18,14 +19,22 @@ docker compose up -d
 # open http://localhost:3000
 ```
 
-## Mobile + Supabase (new project only)
+## Web PWA + Supabase (new project only — does not touch kids JSON)
 
 ```bash
-# 1) Create empty Supabase project, then:
-supabase link --project-ref YOUR_REF
-supabase db push
+# 1) Create empty Supabase project → paste URL + anon key into apps/web-pwa/config.js
+# 2) Link + push migrations (see docs/PWA_SETUP.md)
+npx supabase link --project-ref YOUR_REF
+npx supabase db push
 
-# 2) Mobile
+# 3) Seed demo household (SQL) then:
+npm run pwa
+# open http://localhost:4173
+```
+
+## Mobile + Supabase (optional, later)
+
+```bash
 cd apps/mobile
 cp .env.example .env   # paste anon URL/key
 npm install
@@ -49,6 +58,8 @@ npm run import-json -- --input ../exports/snapshot.json   # dry-run
 ├── supabase/functions/                          # midnight_reset, ical_proxy
 ├── packages/domain/                             # shared pure TS helpers
 ├── scripts/import-json-to-pg.ts                 # snapshot → Supabase
-├── apps/mobile/                                 # Expo app
-└── docs/                                        # safety + store checklist
+├── apps/web-pwa/                                # static PWA → Supabase
+├── apps/mobile/                                 # Expo app (later)
+└── docs/                                        # safety + PWA setup + store checklist
 ```
+

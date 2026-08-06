@@ -1,9 +1,11 @@
 {
   "name": "chompchores",
   "private": true,
-  "description": "Home Docker JSON app + Supabase/Expo path for App Store / Play Store",
+  "description": "Home Docker JSON app + Supabase web PWA / Expo path",
   "scripts": {
     "mobile": "npm --prefix apps/mobile start",
+    "pwa": "npx --yes serve apps/web-pwa -p 4173",
+    "pwa:config": "node scripts/write-pwa-config.cjs",
     "import-json": "npm --prefix scripts run import-json --",
     "domain:test": "npm --prefix packages/domain test"
   }

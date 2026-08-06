@@ -2,9 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#6c47e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ChompChores">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 <title>ChompChores ⚡</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/config.js"></script>
 <style>
+.ios-install{display:none;background:var(--accent-light);border:1px solid var(--accent-border);color:var(--accent);padding:10px 12px;border-radius:var(--radius);font-size:13px;font-weight:600;margin-bottom:1rem}
+.ios-install.visible{display:block}
+.ios-install button{float:right;border:none;background:transparent;color:var(--accent);font-weight:800;cursor:pointer;font-size:14px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#f5f4f0;--surface:#fff;--surface-muted:#eeede8;--border:#e0ddd5;--border-strong:#c4c1b8;
@@ -306,14 +318,14 @@ body.danger-mode .danger-banner{display:block}
 <div id="toast-wrap"></div>
 <div id="offlineScreen" class="screen">
   <div style="font-size:56px">📡</div>
-  <div style="font-size:20px;font-weight:700">Can't reach the server</div>
-  <div style="font-size:14px;color:var(--text-muted);max-width:300px">Make sure ChompChores server is running, then retry.</div>
+  <div style="font-size:20px;font-weight:700">Can't reach Supabase</div>
+  <div style="font-size:14px;color:var(--text-muted);max-width:300px">Check config.js (URL + publishable/anon key) and your network, then retry.</div>
   <button class="btn btn-primary" onclick="initApp()">↺ Retry</button>
 </div>
 <div id="loginScreen" class="screen hidden">
   <div class="login-card">
-    <div><div class="login-logo">Chomp<span>Chores</span> ⚡</div><div class="login-welcome">Welcome back! Sign in to continue</div></div>
-    <div class="login-field"><div class="login-label">Username</div><input type="text" id="loginUsername" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
+    <div><div class="login-logo">Chomp<span>Chores</span> ⚡</div><div class="login-welcome">Sign in with your household account</div></div>
+    <div class="login-field"><div class="login-label">Email</div><input type="email" id="loginUsername" placeholder="you@example.com" autocomplete="username" autocapitalize="none"></div>
     <div class="login-field"><div class="login-label">Password</div><input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" onclick="doLogin()">Sign in →</button>
@@ -334,6 +346,10 @@ body.danger-mode .danger-banner{display:block}
   </div>
 </div>
 <div class="shell" id="appShell" style="display:none">
+  <div id="iosInstall" class="ios-install">
+    Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> for the best experience.
+    <button type="button" onclick="dismissIosInstall()" aria-label="Dismiss">✕</button>
+  </div>
   <div class="topbar">
     <div class="topbar-left"><div class="user-avatar" id="userAvatar">?</div><div class="user-greeting" id="userGreeting">Hey!</div></div>
     <div class="topbar-center">Chomp<span>Chores</span> ⚡</div>
@@ -623,10 +639,41 @@ function playChime(){playBeep(880,.2);setTimeout(()=>playBeep(1100,.2),200);setT
 function playAlarm(){for(let i=0;i<4;i++)setTimeout(()=>playBeep(660,.15,'square'),i*200);}
 function soundOn(){return(currentUser?.soundPref||'on')==='on';}
 
-// ── SERVER ──
+// ── SUPABASE CLOUD (full UI clone — not the Docker /data API) ──
+const _cfg=window.CHOMP_CONFIG||{};
+const _cloudReady=Boolean(_cfg.supabaseUrl&&_cfg.supabaseAnonKey&&!String(_cfg.supabaseUrl).includes('YOUR_PROJECT')&&!String(_cfg.supabaseAnonKey).includes('YOUR_SUPABASE'));
+const sb=_cloudReady?window.supabase.createClient(_cfg.supabaseUrl.replace(/\/rest\/v1\/?$/,''),_cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+let cloudMe=null,stateRev=0,authSession=null;
+
 function setSyncDot(s){const e=document.getElementById('syncDot');if(!e)return;e.style.background={loading:'#f59e0b',ok:'#22c55e',err:'#ef4444'}[s]||'#22c55e';e.title={loading:'Syncing…',ok:'All saved',err:'Save failed'}[s]||'';}
 function applyServerState(j){if(j&&typeof j==='object')S=deepMerge(DEFAULT_STATE(),j);}
-async function loadFromServer(){const r=await fetch('/data');if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();applyServerState(j);return j;}
+function ensureCloudUserInState(){
+  if(!cloudMe)return false;
+  if(!S.users)S.users=[];
+  let u=S.users.find(x=>x.id===cloudMe.id||(x.username||'').toLowerCase()===(cloudMe.username||'').toLowerCase());
+  if(!u){
+    u={id:cloudMe.id,username:cloudMe.username,roles:cloudMe.roles||['chore'],passwordHash:'',createdAt:new Date().toISOString(),soundPref:'on'};
+    S.users.push(u);return true;
+  }
+  if(u.id!==cloudMe.id){u.id=cloudMe.id;return true;}
+  if(Array.isArray(cloudMe.roles)&&cloudMe.roles.length){u.roles=cloudMe.roles;return true;}
+  return false;
+}
+async function loadFromServer(){
+  if(!sb)throw new Error('Supabase not configured');
+  const {data,error}=await sb.rpc('get_app_state');
+  if(error)throw error;
+  cloudMe=data.me||null;
+  stateRev=typeof data.rev==='number'?data.rev:0;
+  if(data.state&&typeof data.state==='object')applyServerState(data.state);
+  else{
+    S=DEFAULT_STATE();
+    S.userScoped=true;
+    S.rev=0;
+  }
+  if(ensureCloudUserInState()&&data.state){/* will save on next mutation */}
+  return S;
+}
 function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{flushSave();},350);}
 function refreshAfterReload(){
   updateBank();
@@ -638,37 +685,63 @@ function refreshAfterReload(){
   else if(activeTab==='rewards'){renderRewardMode();renderRewards();}
   else if(activeTab==='history')renderHistory();
   else if(activeTab==='manage')renderManage();
+  else if(activeTab==='calendar')renderCalendarTab();
 }
 async function flushSave(){
   if(saveInFlight)return saveInFlight;
   saveInFlight=(async()=>{
     setSyncDot('loading');
     try{
-      const r0=await fetch('/data');
-      if(!r0.ok)throw new Error('HTTP '+r0.status);
-      const server=await r0.json();
-      const serverRev=typeof server?.rev==='number'?server.rev:0;
-      const localRev=typeof S.rev==='number'?S.rev:0;
-      const serverRich=!!(server&&server.userScoped&&server.userProgress&&Object.keys(server.userProgress).length);
-      const localRich=!!(S.userScoped&&S.userProgress&&Object.keys(S.userProgress).length);
-      // Block stale / schema-downgrade overwrites (e.g. old tab without userProgress)
-      if(server&&(serverRev>localRev||(serverRich&&!localRich))){
-        applyServerState(server);
-        setSyncDot('ok');
-        toast(serverRev>localRev?'Another device updated — reloaded':'Stale data blocked — reloaded','warn');
-        refreshAfterReload();
-        return false;
+      if(!sb)throw new Error('Supabase not configured');
+      const expected=stateRev;
+      const payload={...S,rev:expected};
+      const {data,error}=await sb.rpc('save_app_state',{p_state:payload,p_expected_rev:expected});
+      if(error){
+        const msg=error.message||'';
+        if(msg.includes('revision_conflict')||error.code==='P0001'){
+          await loadFromServer();
+          setSyncDot('ok');
+          toast('Another device updated — reloaded','warn');
+          refreshAfterReload();
+          return false;
+        }
+        throw error;
       }
-      S.rev=Math.max(localRev,serverRev)+1;
-      const r=await fetch('/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)});
-      if(!r.ok)throw new Error('HTTP '+r.status);
+      stateRev=typeof data?.rev==='number'?data.rev:expected+1;
+      S.rev=stateRev;
       setSyncDot('ok');
       return true;
-    }catch(e){setSyncDot('err');toast('⚠️ Save failed','err');return false;}
+    }catch(e){setSyncDot('err');toast('⚠️ Save failed','err');console.error(e);return false;}
   })();
   try{return await saveInFlight;}finally{saveInFlight=null;}
 }
-async function deleteFromServer(){await fetch('/data',{method:'DELETE'});}
+async function deleteFromServer(){
+  // Household-scoped clear: reset document, do not wipe other households
+  S=DEFAULT_STATE();
+  S.userScoped=true;
+  ensureCloudUserInState();
+  await flushSave();
+}
+function showIosInstallBanner(){
+  const banner=document.getElementById('iosInstall');if(!banner)return;
+  try{if(localStorage.getItem('chomp_ios_install_dismissed')==='1')return;}catch(e){}
+  const ua=navigator.userAgent||'';
+  const iOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+  if(iOS&&!standalone)banner.classList.add('visible');
+}
+function dismissIosInstall(){
+  const banner=document.getElementById('iosInstall');if(banner)banner.classList.remove('visible');
+  try{localStorage.setItem('chomp_ios_install_dismissed','1');}catch(e){}
+}
+async function icalProxyFetch(url){
+  const base=(_cfg.supabaseUrl||'').replace(/\/rest\/v1\/?$/,'').replace(/\/$/,'');
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch(base+'/functions/v1/ical_proxy?url='+encodeURIComponent(url),{
+    headers:session?.access_token?{Authorization:'Bearer '+session.access_token,apikey:_cfg.supabaseAnonKey}:{apikey:_cfg.supabaseAnonKey}
+  });
+  return res;
+}
 
 // ── ROLES ──
 const VALID_ROLES=['chore','task','admin'];
@@ -961,34 +1034,31 @@ async function initApp(){
   document.getElementById('offlineScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appShell').style.display='none';
-  try{setSyncDot('loading');await loadFromServer();setSyncDot('ok');}
-  catch(e){document.getElementById('offlineScreen').classList.remove('hidden');return;}
-  let needSave=false;
-  if(!S.users||S.users.length===0){
-    S.users=[];
-    const h=await sha256('cherry');
-    S.users.push({id:uid(),username:'maahira',passwordHash:h,roles:['chore'],createdAt:new Date().toISOString()});
-    needSave=true;
+  if(!_cloudReady||!sb){
+    document.getElementById('offlineScreen').classList.remove('hidden');
+    document.querySelector('#offlineScreen div[style*="font-size:20px"]').textContent='Supabase not configured';
+    return;
   }
-  if(migrateUsers()) needSave=true;
-  if(migrateUserScoped()) needSave=true;
-  if(needSave) await flushSave();
-  // Restore session from localStorage (survives page refresh)
+  const {data:{session}}=await sb.auth.getSession();
+  authSession=session;
+  if(!session){showLogin();return;}
   try{
-    const saved=localStorage.getItem('chomp_session');
-    if(saved){
-      const sess=JSON.parse(saved);
-      const user=S.users.find(u=>u.id===sess.id);
-      if(user){
-        currentUser=sessionUser(user);
-        restoreImpersonation();
-        enterApp();
-        return;
-      }
-      localStorage.removeItem('chomp_session');
-    }
-  }catch(e){}
-  showLogin();
+    setSyncDot('loading');
+    await loadFromServer();
+    let needSave=false;
+    if(migrateUsers()) needSave=true;
+    if(migrateUserScoped()) needSave=true;
+    if(ensureCloudUserInState()) needSave=true;
+    if(needSave) await flushSave();
+    const user=S.users.find(u=>u.id===cloudMe.id)||S.users.find(u=>(u.username||'').toLowerCase()===(cloudMe.username||'').toLowerCase());
+    if(!user){showLogin();toast('No profile in household state','err');return;}
+    currentUser=sessionUser(user);
+    setSyncDot('ok');
+    enterApp();
+  }catch(e){
+    console.error(e);
+    document.getElementById('offlineScreen').classList.remove('hidden');
+  }
 }
 
 // ── UTILS ──
@@ -1051,20 +1121,33 @@ function assignOptionsHTML(selectedId){
   return choreCapableUsers().map(u=>`<option value="${u.id}"${u.id===def?' selected':''}>${esc(cap(u.username))}</option>`).join('')||'<option value="">No users</option>';
 }
 
-// ── AUTH ──
+// ── AUTH (Supabase email/password) ──
 async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
-function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('appShell').style.display='none';document.getElementById('loginUsername').value='';document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent='';setTimeout(()=>document.getElementById('loginUsername').focus(),100);}
+function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('appShell').style.display='none';document.getElementById('loginError').textContent='';setTimeout(()=>document.getElementById('loginUsername').focus(),100);}
 async function doLogin(){
-  const un=document.getElementById('loginUsername').value.trim().toLowerCase();
+  const email=document.getElementById('loginUsername').value.trim();
   const pw=document.getElementById('loginPassword').value;
   const err=document.getElementById('loginError');
-  if(!un||!pw){err.textContent='Please enter username and password';return;}
-  const h=await sha256(pw);
-  const user=S.users.find(u=>u.username.toLowerCase()===un&&u.passwordHash===h);
-  if(!user){err.textContent='Incorrect username or password';document.getElementById('loginPassword').value='';return;}
-  currentUser=sessionUser(user);
-  try{localStorage.setItem('chomp_session',JSON.stringify({id:user.id}));}catch(e){}
-  enterApp();
+  if(!email||!pw){err.textContent='Please enter email and password';return;}
+  if(!sb){err.textContent='Supabase not configured';return;}
+  err.textContent='';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
+  if(error){err.textContent=error.message;document.getElementById('loginPassword').value='';return;}
+  authSession=data.session;
+  try{
+    setSyncDot('loading');
+    await loadFromServer();
+    let needSave=false;
+    if(migrateUsers()) needSave=true;
+    if(migrateUserScoped()) needSave=true;
+    if(ensureCloudUserInState()) needSave=true;
+    if(needSave) await flushSave();
+    const user=S.users.find(u=>u.id===cloudMe.id)||S.users.find(u=>(u.username||'').toLowerCase()===(cloudMe.username||'').toLowerCase());
+    if(!user){err.textContent='Account has no household profile';return;}
+    currentUser=sessionUser(user);
+    setSyncDot('ok');
+    enterApp();
+  }catch(e){err.textContent=e.message||'Load failed';console.error(e);}
 }
 function enterApp(){
   parentUnlocked=isAdmin();
@@ -1073,6 +1156,7 @@ function enterApp(){
   document.getElementById('appShell').style.display='';
   document.getElementById('userAvatar').textContent=currentUser.username.slice(0,2).toUpperCase();
   document.getElementById('userGreeting').textContent='Hey '+cap(currentUser.username)+'!';
+  showIosInstallBanner();
   fillViewAsSelect();
   fillViewAsSelectTask();
   fillAssignSelects();
@@ -1118,14 +1202,15 @@ function showAdminManage(){
   switchAppMode('chore');
   showTab('manage');
 }
-function doLogout(){
-  currentUser=null;parentUnlocked=false;impersonateUserId=null;
-  try{localStorage.removeItem('chomp_session');sessionStorage.removeItem('chomp_viewas');}catch(e){}
+async function doLogout(){
+  currentUser=null;parentUnlocked=false;impersonateUserId=null;authSession=null;cloudMe=null;
+  try{sessionStorage.removeItem('chomp_viewas');}catch(e){}
   alarmTimers.forEach(clearTimeout);alarmTimers=[];
   if(tvSession.active){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
   const sw=document.getElementById('modeSwitch'); if(sw) sw.classList.remove('visible');
   const vw=document.getElementById('viewAsWrap'); if(vw) vw.classList.remove('visible');
   const vwt=document.getElementById('viewAsWrapTask'); if(vwt) vwt.classList.remove('visible');
+  try{if(sb)await sb.auth.signOut();}catch(e){}
   showLogin();
 }
 async function addUser(){
@@ -1141,7 +1226,8 @@ async function addUser(){
   document.getElementById('uUsername').value='';document.getElementById('uPassword').value='';
   setRoleChecks('uRole',['chore']);
   logAdmin('user-add',`User added: "${un}"`,`roles: ${rolesLabel(vr.roles)}`);
-  save();renderManage();toast(`User "${un}" (${rolesLabel(vr.roles)}) added!`,'ok');
+  save();renderManage();
+  toast(`User "${un}" added for chores/tasks. For login, also create them in Supabase Auth and a profiles row.`,'ok');
 }
 async function changeUserPassword(id){
   const p=prompt('New password:');if(!p||p.length<3){if(p!==null)toast('Too short','err');return;}
@@ -1794,7 +1880,7 @@ function removeCalFeed(id){
 async function refreshCalendar(){
   const feeds=userCalFeeds();if(!feeds.length)return;
   for(const feed of feeds){
-    try{const res=await fetch('/ical-proxy?url='+encodeURIComponent(feed.url));if(!res.ok)continue;feed.events=parseIcal(await res.text());}
+    try{const res=await icalProxyFetch(feed.url);if(!res.ok)continue;feed.events=parseIcal(await res.text());}
     catch(e){console.warn('ical',e.message);}
   }
   save();renderCalDash();renderTaskCalDash();
@@ -2068,10 +2154,10 @@ function clearHistory(){
   save();renderHistory();toast('History cleared','info');
 }
 async function clearAll(){
-  if(!confirm('Clear ALL data from server?'))return;if(!confirm('100% sure?'))return;
+  if(!confirm('Clear ALL data for THIS household?'))return;if(!confirm('100% sure?'))return;
   if(tvSession.active){clearInterval(tvSession.intervalId);tvSession={active:false,rewardId:null,startTime:null,intervalId:null};}
-  try{await deleteFromServer();}catch(e){toast('Delete failed','err');return;}
-  S=DEFAULT_STATE();parentUnlocked=false;setSyncDot('ok');updateLockUI();updateBank();showTab('dashboard');renderHistory();toast('All data cleared','info');
+  try{await deleteFromServer();}catch(e){toast('Clear failed','err');return;}
+  parentUnlocked=isAdmin();setSyncDot('ok');updateLockUI();updateBank();showTab('dashboard');renderHistory();toast('Household data cleared','info');
 }
 
 // ── MIDNIGHT ──
@@ -2129,6 +2215,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── START ──
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
 initApp();
 </script>
 </body>
