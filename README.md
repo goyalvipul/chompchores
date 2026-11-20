@@ -14,6 +14,9 @@ See [docs/DATA_SAFETY.md](docs/DATA_SAFETY.md), [docs/PWA_SETUP.md](docs/PWA_SET
 
 ## Legacy (home LAN)
 
+The Docker app now supports server-side login, username reminders, and expiring password-reset email links. See [Docker account recovery and redeployment](docs/DOCKER_RECOVERY.md). Configure the email service and registered recovery addresses first.
+
+
 ```bash
 docker compose up -d
 # open http://localhost:3000
