@@ -1,0 +1,26 @@
+name: Docker auth recovery tests
+
+on:
+  push:
+    branches:
+      - feature/forgot-username-password
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-recovery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check auth.js
+          node --check server.js
+          node --check scripts/reset-legacy-password.cjs
+      - name: Run auth and token tests
+        run: node --test tests/auth.test.cjs

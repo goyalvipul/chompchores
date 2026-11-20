@@ -5,6 +5,8 @@ WORKDIR /app
 # Copy app files
 COPY index.html .
 COPY server.js .
+COPY auth.js .
+COPY scripts/reset-legacy-password.cjs ./scripts/reset-legacy-password.cjs
 
 # Create data directory for persistent storage
 RUN mkdir -p /data
