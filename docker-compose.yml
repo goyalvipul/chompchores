@@ -1,12 +1,20 @@
 services:
   chompcores:
     build: .
-    container_name: chompcores
+    container_name: ${CHOMPCHORES_CONTAINER_NAME:-chompcores}
     ports:
-      - "3000:3000"
+      - "${CHOMPCHORES_PORT:-3000}:3000"
     environment:
       - PORT=3000
       - DATA_FILE=/data/data.json
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3000}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - MAIL_FROM=${MAIL_FROM:-}
+      - RECOVERY_USERNAME=${RECOVERY_USERNAME:-}
+      - RECOVERY_EMAIL=${RECOVERY_EMAIL:-}
+      - RECOVERY_CONTACTS=${RECOVERY_CONTACTS:-}
+      - COOKIE_SECURE=${COOKIE_SECURE:-}
+      - ALLOW_DATA_DELETE=${ALLOW_DATA_DELETE:-false}
     volumes:
       - chompcores_data:/data    # data.json lives here — survives container restarts/rebuilds
       - ./index.html:/app/index.html:ro
