@@ -72,7 +72,7 @@ test('legacy Docker account recovery end-to-end (mock email provider)', async ()
     assert.equal(emails.length, 2);
     const token = emails[1].text.match(/#reset_token=([a-f0-9]{64})/)?.[1];
     assert.ok(token);
-    const verification = await call('GET', '/auth/verify-reset?token=' + token);
+    const verification = await call('POST', '/auth/verify-reset', { token });
     assert.equal(verification.body.valid, true);
 
     const short = await call('POST', '/auth/reset', { token, password: 'short' });
