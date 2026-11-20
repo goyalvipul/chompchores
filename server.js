@@ -9,6 +9,7 @@ const path = require('path');
 const os   = require('os');
 const https = require('https');
 const httpMod = require('http');
+const { createAuth } = require('./auth');
 
 const PORT      = process.env.PORT || 3000;
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data.json');
@@ -44,11 +45,11 @@ function writeData(obj) {
   } catch (e) { console.error('[db] write error:', e.message); return false; }
 }
 function json(res, code, obj) {
-  res.writeHead(code, { 'Content-Type':'application/json','Cache-Control':'no-cache','Access-Control-Allow-Origin':'*' });
+  res.writeHead(code, { 'Content-Type':'application/json','Cache-Control':'no-store' });
   res.end(JSON.stringify(obj));
 }
 function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin','*');
+  // Same-origin credentials only. Do not expose household data across origins.
   res.setHeader('Access-Control-Allow-Methods','GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
 }
@@ -76,40 +77,103 @@ function fetchUrl(url) {
 }
 
 // ── server ────────────────────────────────────────────────────────────────────
+const auth = createAuth({ readData, writeData, json, parseBody, dataFile: DATA_FILE });
+function safeState(state) {
+  if (!state) return null;
+  const copy = JSON.parse(JSON.stringify(state));
+  // Password hashes should never be sent to the browser. Admin/user edits are
+  // merged with the server-side originals below.
+  for (const u of copy.users || []) delete u.passwordHash;
+  return copy;
+}
+function canWriteUsers(session, original, submitted) {
+  const prev = original?.users || [];
+  const users = submitted?.users || [];
+  if (!Array.isArray(users)) return false;
+  const oldById = new Map(prev.map(u => [u.id, u]));
+  const admin = Array.isArray(session.user.roles)
+    ? session.user.roles.includes('admin')
+    : session.user.role === 'admin';
+  if (!admin) {
+    if (users.length !== prev.length) return false;
+    for (const u of users) {
+      const prior = oldById.get(u.id);
+      if (!prior) return false;
+      const ignored = u.id === session.user.id
+        ? ['soundPref', 'passwordHash']
+        : ['passwordHash'];
+      const without = (obj) => Object.fromEntries(Object.entries(obj).filter(([key]) => !ignored.includes(key)));
+      if (JSON.stringify(without(u)) !== JSON.stringify(without(prior))) return false;
+      if (u.id !== session.user.id && u.passwordHash !== prior.passwordHash) return false;
+    }
+  }
+  for (const u of users) {
+    const before = oldById.get(u.id);
+    if (!u.passwordHash && before) u.passwordHash = before.passwordHash;
+    if (!/^[a-f0-9]{64}$/.test(String(u.passwordHash || ''))) return false;
+  }
+  return true;
+}
+function sameOrigin(req) {
+  if (!req.headers.origin) return true;
+  try { return new URL(req.headers.origin).host === req.headers.host; }
+  catch (_) { return false; }
+}
+
 const server = http.createServer(async (req, res) => {
   cors(res);
+  if (!sameOrigin(req) && req.method !== 'GET' && req.method !== 'OPTIONS')
+    return json(res, 403, { error: 'Cross-origin request denied' });
   const urlObj = new URL(req.url, `http://localhost:${PORT}`);
   const url    = urlObj.pathname;
 
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+  if (await auth.handle(req, res, urlObj)) return;
+  const login = auth.currentSession(req);
 
   // GET /data
-  if (req.method === 'GET' && url === '/data')
-    return json(res, 200, readData());
+  if (req.method === 'GET' && url === '/data') {
+    if (!login) return auth.reject(res);
+    return json(res, 200, safeState(readData()));
+  }
 
   // POST /data
   if (req.method === 'POST' && url === '/data') {
+    if (!login) return auth.reject(res);
     try {
       const body = await parseBody(req);
+      const original = readData();
+      const expected = (Number(original?.rev) || 0) + 1;
+      if (body?.rev !== expected)
+        return json(res, 409, { ok: false, error: 'Stale state; reload before saving' });
+      if (!canWriteUsers(login, original, body))
+        return json(res, 403, { ok: false, error: 'Account update not permitted' });
       const ok = writeData(body);
       return json(res, ok ? 200 : 500, { ok });
     }
-    catch (e) { return json(res, 400, {ok:false,error:'invalid JSON'}); }
+    catch (e) { return json(res, 400, { ok: false, error: 'invalid JSON' }); }
   }
 
   // DELETE /data
   if (req.method === 'DELETE' && url === '/data') {
-    try { rotateBackup(); if (fs.existsSync(DATA_FILE)) fs.unlinkSync(DATA_FILE); } catch(e) {}
-    return json(res, 200, {ok:true});
+    // Legacy DELETE was unauthenticated. Deletion now requires explicit operator
+    // opt-in and an admin session, so accidental resets cannot wipe the volume.
+    if (!login) return auth.reject(res);
+    const isAdmin = (login.user.roles || [login.user.role]).includes('admin');
+    if (!isAdmin || process.env.ALLOW_DATA_DELETE !== 'true') return auth.reject(res, 403);
+    try { rotateBackup(); if (fs.existsSync(DATA_FILE)) fs.unlinkSync(DATA_FILE); }
+    catch (e) { return json(res, 500, { ok: false }); }
+    return json(res, 200, { ok: true });
   }
 
   // GET /ical-proxy?url=... — fetch iCal feed server-side (avoids CORS)
   if (req.method === 'GET' && url === '/ical-proxy') {
+    if (!login) return auth.reject(res);
     const icalUrl = urlObj.searchParams.get('url');
     if (!icalUrl) return json(res, 400, {error:'missing url'});
     try {
       const data = await fetchUrl(icalUrl);
-      res.writeHead(200, { 'Content-Type':'text/calendar;charset=utf-8','Cache-Control':'max-age=300','Access-Control-Allow-Origin':'*' });
+      res.writeHead(200, { 'Content-Type':'text/calendar;charset=utf-8','Cache-Control':'max-age=300' });
       res.end(data);
     } catch (e) {
       json(res, 502, {error:'could not fetch calendar: '+e.message});
