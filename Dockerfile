@@ -5,6 +5,7 @@ WORKDIR /app
 # Copy app files
 COPY index.html .
 COPY server.js .
+COPY auth.js .
 
 # Create data directory for persistent storage
 RUN mkdir -p /data
