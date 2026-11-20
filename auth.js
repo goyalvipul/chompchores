@@ -222,8 +222,9 @@ function createAuth({ readData, writeData, json, parseBody, dataFile }) {
         json(res, 200, { ok: true, message: 'If the address is registered, check your inbox.' });
         return true;
       }
-      if (req.method === 'GET' && url === '/auth/verify-reset') {
-        const token = urlObj.searchParams.get('token') || '';
+      if (req.method === 'POST' && url === '/auth/verify-reset') {
+        const body = await readRequest(req, parseBody);
+        const token = String(body?.token || '');
         const match = /^[a-f0-9]{64}$/.test(token) && loadTokenFile(tokenFile).some(x => safeCompare(x.hash, digest(token)));
         json(res, 200, { valid: Boolean(match) }); return true;
       }
