@@ -1132,7 +1132,7 @@ async function showResetFromUrl(token){
   const btn=document.getElementById('resetSubmit');
   btn.disabled=true;
   try{
-    const r=await fetch('/auth/verify-reset?token='+encodeURIComponent(token),{cache:'no-store'});
+    const r=await fetch('/auth/verify-reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
     const data=await r.json();
     if(!data.valid){result.textContent='This link is invalid or has expired. Request another one from Forgot password.';return;}
     btn.disabled=false;document.getElementById('newRecoveryPassword').focus();
