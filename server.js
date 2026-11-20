@@ -104,7 +104,7 @@ function canWriteUsers(session, original, submitted) {
         : ['passwordHash'];
       const without = (obj) => Object.fromEntries(Object.entries(obj).filter(([key]) => !ignored.includes(key)));
       if (JSON.stringify(without(u)) !== JSON.stringify(without(prior))) return false;
-      if (u.id !== session.user.id && u.passwordHash !== prior.passwordHash) return false;
+      if (u.id !== session.user.id && u.passwordHash && u.passwordHash !== prior.passwordHash) return false;
     }
   }
   for (const u of users) {
