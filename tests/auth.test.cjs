@@ -82,7 +82,7 @@ test('legacy Docker account recovery end-to-end (mock email provider)', async ()
     assert.equal(auth.currentSession(req), null); // old session revoked
     const reused = await call('POST', '/auth/reset', { token, password: 'a-different-long-pass!' });
     assert.equal(reused.status, 400);
-    const invalid = await call('GET', '/auth/verify-reset?token=' + token);
+    const invalid = await call('POST', '/auth/verify-reset', { token });
     assert.equal(invalid.body.valid, false);
 
     const oldPassword = await call('POST', '/auth/login', { username: 'maahira', password: 'cherry' });
