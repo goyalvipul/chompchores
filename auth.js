@@ -132,7 +132,7 @@ function createAuth({ readData, writeData, json, parseBody, dataFile }) {
     const stored = sessions.get(key);
     if (!stored || stored.expires <= Date.now()) { sessions.delete(key); return null; }
     const user = (readData()?.users || []).find(x => x.id === stored.userId);
-    if (!user) { sessions.delete(key); return null; }
+    if (!user || user.passwordHash !== stored.passwordHash) { sessions.delete(key); return null; }
     return { user, key };
   }
   function revokeUserSessions(userId) {
@@ -164,7 +164,7 @@ function createAuth({ readData, writeData, json, parseBody, dataFile }) {
           json(res, 401, { error: 'Incorrect username or password' }); return true;
         }
         const sid = crypto.randomBytes(32).toString('hex');
-        sessions.set(digest(sid), { userId: user.id, expires: Date.now() + sessionMs });
+        sessions.set(digest(sid), { userId: user.id, passwordHash: user.passwordHash, expires: Date.now() + sessionMs });
         res.setHeader('Set-Cookie', cookie(req, sid));
         json(res, 200, { ok: true, userId: user.id });
         return true;
@@ -204,7 +204,7 @@ function createAuth({ readData, writeData, json, parseBody, dataFile }) {
                   const user = accounts.find(x => String(x.username).toLowerCase() === username);
                   const token = crypto.randomBytes(32).toString('hex');
                   const url = new URL(publicUrl());
-                  url.searchParams.set('reset_token', token);
+                  url.hash = 'reset_token=' + token;
                   tokens.push({ hash: digest(token), userId: user.id, expires: Date.now() + ttlMs });
                   saveTokenFile(tokenFile, tokens);
                   await sendEmail(email, 'Reset your ChompChores password',
